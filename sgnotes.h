@@ -510,7 +510,6 @@ gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
 	if (result == GTK_RESPONSE_OK)
 	{
 		const gchar *text = gtk_entry_get_text(GTK_ENTRY(entry));
-		
 		saveToFile(text);
 	}
 	else if (result == GTK_RESPONSE_CANCEL)
