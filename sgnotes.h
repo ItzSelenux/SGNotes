@@ -452,7 +452,6 @@ static void on_rename_button_clicked(GtkButton *button, gpointer user_data)
 		}
 		input = g_build_filename(dir_path, current_file, NULL);
 		strcpy(current_file, text);
-		g_print(current_file);
 		if (rename(input, output) == 0)
 		{
 			printf("File moved succesfully.\n");
@@ -464,7 +463,6 @@ static void on_rename_button_clicked(GtkButton *button, gpointer user_data)
 			{
 				gtk_label_set_text(GTK_LABEL(row_widget), text);
 			}
-			g_print(current_file);
 		}
 		else
 		{
@@ -483,7 +481,6 @@ static void on_rename_button_clicked(GtkButton *button, gpointer user_data)
 static void on_submenu_item1_selected(GtkWidget *widget, gpointer data)
 {
 GtkWidget *dialog;
-gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
 	GtkWidget *content_area;
 	GtkWidget *entry;
 	GtkWidget *label;
@@ -567,7 +564,7 @@ static void on_submenu_item2_selected(GtkWidget *widget, gpointer data)
 	}
 }
 
-void on_submenu_item3_selected(GtkMenuItem *menuitem, gpointer userdata) 
+void on_submenu_item3_selected(GtkMenuItem *menuitem, gpointer userdata)
 {
 	dialog = gtk_about_dialog_new();
 
