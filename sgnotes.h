@@ -236,7 +236,7 @@ void on_delete_button_clicked(GtkButton *button, gpointer user_data)
 		return;
 	}
 
-	GtkWidget *dialog = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO, "Are you sure you want to delete this note: '%s'?", current_file);
+	dialog = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO, "Are you sure you want to delete this note: '%s'?", current_file);
 	gtk_window_set_title(GTK_WINDOW(dialog), "WARNING");
 	gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
 	gint response = gtk_dialog_run(GTK_DIALOG(dialog));
@@ -350,10 +350,11 @@ void saveToFile(const gchar *text)
 			GTK_BUTTONS_YES_NO,
 			"The file already exists. Do you want to overwrite it?");
 		gtk_window_set_title(GTK_WINDOW(dialog), "Confirm");
+		gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
 		gint result = gtk_dialog_run(GTK_DIALOG(dialog));
 		gtk_widget_destroy(dialog);
 
-		if (result != GTK_RESPONSE_YES)
+		if (result == GTK_RESPONSE_NO || result == GTK_RESPONSE_CANCEL)
 		{
 			g_free(full_path);
 			g_free(dir_path);
@@ -366,13 +367,13 @@ void saveToFile(const gchar *text)
 	{
 		fclose(file);
 		g_print("Note saved to %s\n", full_path);
-		additem(GTK_BUTTON(submenu_item1), GTK_LIST_BOX(list), text);
+		 additem(GTK_BUTTON(submenu_item1), GTK_LIST_BOX(list), text);
 		g_free(full_path);
 	}
 	else
 	{
 		g_print("Unable to create the file.\n");
-				// Error handler
+		// Error handler
 		GtkWidget *error_dialog = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "Unable to create the file: \n '%s'", text);
 		gtk_window_set_title(GTK_WINDOW(error_dialog), "Unable to create the file.");
 		gtk_dialog_run(GTK_DIALOG(error_dialog));
@@ -380,8 +381,8 @@ void saveToFile(const gchar *text)
 	}
 
 	g_free(dir_path);
-
 }
+
 
 
 static void on_rename_button_clicked(GtkButton *button, gpointer user_data)
@@ -396,7 +397,7 @@ static void on_rename_button_clicked(GtkButton *button, gpointer user_data)
 	gchar *input;
 	FILE *file;
 
-	GtkWidget *dialog;
+	dialog;
 		GtkWidget *content_area;
 		GtkWidget *entry;
 		GtkWidget *label;
@@ -432,14 +433,14 @@ static void on_rename_button_clicked(GtkButton *button, gpointer user_data)
 		// Check if the file already exists
 		if (g_file_test(output, G_FILE_TEST_EXISTS))
 		{
-			GtkWidget *dialog;
-			gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
+			dialog;
 				dialog = gtk_message_dialog_new(NULL,
 				GTK_DIALOG_MODAL,
 				GTK_MESSAGE_QUESTION,
 				GTK_BUTTONS_YES_NO,
 			"The file already exists. Do you want to overwrite it?");
 			gtk_window_set_title(GTK_WINDOW(dialog), "Confirm");
+			gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
 			gint result = gtk_dialog_run(GTK_DIALOG(dialog));
 			gtk_widget_destroy(dialog);
 
@@ -480,7 +481,7 @@ static void on_rename_button_clicked(GtkButton *button, gpointer user_data)
 
 static void on_submenu_item1_selected(GtkWidget *widget, gpointer data)
 {
-GtkWidget *dialog;
+	dialog;
 	GtkWidget *content_area;
 	GtkWidget *entry;
 	GtkWidget *label;
@@ -492,7 +493,6 @@ GtkWidget *dialog;
 	"OK",
 	GTK_RESPONSE_OK,
 	"Cancel", GTK_RESPONSE_CANCEL, NULL);
-	gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
 
 	gtk_widget_set_size_request(dialog, 333, -1);
 	content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
@@ -500,6 +500,7 @@ GtkWidget *dialog;
 	entry = gtk_entry_new();
 	gtk_container_add(GTK_CONTAINER(content_area), entry);
 	g_signal_connect(G_OBJECT(entry), "changed", G_CALLBACK(on_entry_changed), dialog);
+	gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
 	gtk_widget_show_all(dialog);
 
 	gint result = gtk_dialog_run(GTK_DIALOG(dialog));

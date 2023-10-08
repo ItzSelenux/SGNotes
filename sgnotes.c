@@ -143,6 +143,7 @@ g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
 		g_signal_connect(submenu_item1, "activate", G_CALLBACK(on_submenu_item1_selected), NULL);
 		g_signal_connect(submenu_item2, "activate", G_CALLBACK(on_submenu_item2_selected), NULL);
+		g_signal_connect(submenu_item3, "activate", G_CALLBACK(on_submenu_item3_selected), NULL);
 
 
 	gtk_widget_add_accelerator(submenu_item1, "activate", accel_group, GDK_KEY_N, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
@@ -150,7 +151,7 @@ g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 	g_signal_connect(window, "button-press-event", G_CALLBACK(on_button_press), submenu);
 	load_file_list();
 
-	g_timeout_add(1000, timeout_callback, NULL);
+	g_timeout_add(100, timeout_callback, NULL);
 	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
 	gtk_widget_show_all(window);
 	
