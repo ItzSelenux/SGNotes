@@ -57,9 +57,9 @@ g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 		gtk_header_bar_pack_start(GTK_HEADER_BAR(headerbar), button);
 
 		// Create the title
-		GtkWidget *label = gtk_label_new(NULL);
-		gtk_label_set_markup(GTK_LABEL(label), "<b>Notes - SGNotes</b>");
-		gtk_header_bar_pack_start(GTK_HEADER_BAR(headerbar), label);
+		wintitle = gtk_label_new(NULL);
+		gtk_label_set_markup(GTK_LABEL(wintitle), "<b>Notes - SGNotes</b>");
+		gtk_header_bar_pack_start(GTK_HEADER_BAR(headerbar), wintitle);
 
 		// Create the submenu
 		GtkWidget *submenu = gtk_menu_new();
@@ -141,7 +141,7 @@ g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 			
 		scrolled_treeview = gtk_scrolled_window_new(NULL, NULL);
 		gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_treeview), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-		gtk_widget_set_size_request(scrolled_treeview, 90, 150);
+		gtk_widget_set_size_request(scrolled_treeview, 100, 150);
 			
 		buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
 		rename_button = gtk_button_new_with_label("Rename");

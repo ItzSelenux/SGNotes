@@ -25,6 +25,7 @@ static GtkWidget *submenu_imglist_item3;
 static GtkWidget *grid;
 static GtkWidget *window;
 static GtkWidget *list;
+GtkWidget *wintitle;
 static GtkWidget *text_view;
 static GtkWidget *textbox_grid;
 static GtkWidget *save_button;
@@ -39,8 +40,9 @@ GtkListStore *store; //img store
 static char current_folder[1024] = "";
 static char current_file[1024] = ""; // Store Actual file name
 char config_file_path[256];
+char markup_buffer[256];
 
-int selfromtreeview; 
+int selfromtreeview;
 int selfromlistbox;
 typedef struct
 {
@@ -947,6 +949,12 @@ gboolean timeout_callback(gpointer user_data)
 		gtk_widget_hide(submenu_filelist_item3);
 		gtk_widget_hide(submenu_imglist_item3);
 		gtk_widget_set_hexpand(scrolled_list, TRUE);
+	gtk_label_set_markup(GTK_LABEL(wintitle), "<b>Notes - SGNotes</b>");
+	}
+	else
+	{
+	snprintf(markup_buffer, sizeof(markup_buffer), "<b>%s- SGNotes</b>", current_file);
+	gtk_label_set_markup(GTK_LABEL(wintitle), markup_buffer);
 	}
 
 	on_save_button_clicked(NULL, user_data);
