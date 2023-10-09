@@ -1,9 +1,11 @@
 #include <gtk/gtk.h>
+#include <gdk-pixbuf/gdk-pixbuf.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <pwd.h>
+#include <sys/stat.h>
 #define ML 256
 
 GtkIconTheme *theme;
@@ -12,12 +14,14 @@ GdkPixbuf *icon;
 GtkAccelGroup *accel_group;
 int wraptext;
 int fix;
-char *home_dir;
-
-
 char *pm;
 GtkWidget *dialog;
+GtkWidget *scrolled_treeview;
+GtkWidget *treeview;
 static GtkWidget *submenu_item1;
+static GtkWidget *submenu_filelist_item2;
+static GtkWidget *submenu_filelist_item3;
+static GtkWidget *submenu_imglist_item3;
 static GtkWidget *grid;
 static GtkWidget *window;
 static GtkWidget *list;
@@ -26,12 +30,24 @@ static GtkWidget *textbox_grid;
 static GtkWidget *save_button;
 static GtkWidget *rename_button;
 static GtkWidget *delete_button;
+static GtkWidget *pic_button;
 static GtkWidget *scrolled_list;
 static GtkWidget *scrolled_txt;
 static GtkTextBuffer *buffer;
+GtkListStore *store; //img store
 
+static char current_folder[1024] = "";
 static char current_file[1024] = ""; // Store Actual file name
 char config_file_path[256];
+
+int selfromtreeview; 
+int selfromlistbox;
+typedef struct
+{
+	GdkPixbuf *pixbuf;
+	gchar *path;
+}ImageInfo;
+
 
 void readconf()
 {
@@ -89,8 +105,132 @@ void readconf()
 	printf("Fix: %d\n", fix);
 }
 
+void add_images_from_directory(GtkWidget *widget, gpointer user_data)
+{
+	gtk_list_store_clear(GTK_LIST_STORE(store));
+
+	const char *home = getenv("HOME");
+	const char *notes_dir = "/.local/share/sgnotes/";
+	char dir_path[1024];
+	snprintf(dir_path, sizeof(dir_path), "%s%s%s/%s_files", home, notes_dir, current_folder, current_file);
+
+	GFile *directory = g_file_new_for_path(dir_path);
+
+	if (!g_file_query_exists(directory, NULL))
+	{
+		g_print("This note don't have pictures.\n");
+		g_object_unref(directory);
+		return;
+	}
+
+	GError *error = NULL;
+	GFileEnumerator *enumerator = g_file_enumerate_children(directory, G_FILE_ATTRIBUTE_STANDARD_NAME, G_FILE_QUERY_INFO_NONE, NULL, &error);
+
+	if (error != NULL)
+	{
+		g_print("Failed to enum files on directory: %s\n", error->message);
+		g_error_free(error);
+		g_object_unref(directory);
+		return;
+	}
+
+	GFileInfo *info;
+	while ((info = g_file_enumerator_next_file(enumerator, NULL, &error)) != NULL)
+	{
+		const char *filename = g_file_info_get_name(info);
+		char *file_path = g_build_filename(dir_path, filename, NULL);
+
+		GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(file_path, NULL);
+			if (pixbuf != NULL)
+		{
+		int original_width = gdk_pixbuf_get_width(pixbuf);
+		int target_width = 90;
+		int target_height = gdk_pixbuf_get_height(pixbuf) * target_width / original_width;
+
+		GdkPixbuf *scaled_pixbuf = gdk_pixbuf_scale_simple(pixbuf, target_width, target_height, GDK_INTERP_BILINEAR);
+
+		GtkTreeIter iter;
+		gtk_list_store_append(store, &iter);
+		gtk_list_store_set(store, &iter, 0, scaled_pixbuf, -1);
+
+		g_object_unref(pixbuf);
+		g_object_unref(scaled_pixbuf);
+		}
+		g_free(file_path);
+		g_object_unref(info);
+	}
+	g_file_enumerator_close(enumerator, NULL, NULL);
+	g_object_unref(enumerator);
+	g_object_unref(directory);
+}
 
 
+void add_image(GtkWidget *widget, gpointer user_data)
+{
+	GtkTreeIter iter;
+	GtkWidget *dialog;
+	GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
+	gint res;
+
+	dialog = gtk_file_chooser_dialog_new("Open File",
+		GTK_WINDOW(window),
+		action,
+		"_Cancel",
+		GTK_RESPONSE_CANCEL,
+		"_Open",
+		GTK_RESPONSE_ACCEPT,
+		NULL);
+
+	res = gtk_dialog_run(GTK_DIALOG(dialog));
+	if (res == GTK_RESPONSE_ACCEPT)
+	{
+		char *filename;
+		GtkFileChooser *chooser = GTK_FILE_CHOOSER(dialog);
+		filename = gtk_file_chooser_get_filename(chooser);
+		GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(filename, NULL);
+		if (pixbuf != NULL)
+		{
+			int original_width = gdk_pixbuf_get_width(pixbuf);
+			int target_width = 100;
+			int target_height = gdk_pixbuf_get_height(pixbuf) * target_width / original_width;
+
+			const char *home = getenv("HOME");
+			const char *notes_dir = "/.local/share/sgnotes/";
+			char file_path[1024];
+			snprintf(file_path, sizeof(file_path), "%s%s%s/%s_files", home, notes_dir, current_folder, current_file);
+
+			g_mkdir_with_parents(file_path, 0755);
+
+			// Always use .png extension for the copied files
+			char unique_filename[1024];
+			int counter = 0;
+			do
+			{
+				snprintf(unique_filename, sizeof(unique_filename), "%s/%d.png", file_path, counter);
+				counter++;
+			} while (g_file_test(unique_filename, G_FILE_TEST_EXISTS));
+
+			GFile *source_file = g_file_new_for_path(filename);
+			GFile *destination_file = g_file_new_for_path(unique_filename);
+
+			if (g_file_copy(source_file, destination_file, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, NULL))
+			{
+				GdkPixbuf *scaled_pixbuf = gdk_pixbuf_scale_simple(pixbuf, target_width, target_height, GDK_INTERP_BILINEAR);
+				gtk_list_store_append(store, &iter);
+				gtk_list_store_set(store, &iter, 0, scaled_pixbuf, -1);
+				g_object_unref(pixbuf);
+				g_object_unref(scaled_pixbuf);
+			}
+			else
+			{
+				g_print("Error can't open output folder.\n");
+			}
+			g_object_unref(source_file);
+			g_object_unref(destination_file);
+		}
+	}
+	gtk_widget_destroy(dialog);
+}
 
 
 gboolean on_button_press(GtkWidget *widget, GdkEventButton *event, gpointer data)
@@ -101,7 +241,6 @@ gboolean on_button_press(GtkWidget *widget, GdkEventButton *event, gpointer data
 		gtk_menu_popup_at_pointer(GTK_MENU(submenu), NULL);
 		return TRUE;
 	}
-
 	return FALSE;
 }
 
@@ -114,8 +253,7 @@ static void on_entry_changed(GtkEditable *editable, gpointer user_data)
 	g_free(cleaned_text);
 }
 
-
-void save_file_content()
+void on_save_button_clicked(GtkButton *button, gpointer user_data)
 {
 	//Fix saving empty files
 	if (current_file[0] == '\0')
@@ -126,7 +264,7 @@ void save_file_content()
 	const char *home = getenv("HOME");
 	const char *notes_dir = "/.local/share/sgnotes/";
 	char file_path[1024];
-	snprintf(file_path, sizeof(file_path), "%s%s%s", home, notes_dir, current_file);
+	snprintf(file_path, sizeof(file_path), "%s%s%s/%s", home, notes_dir, current_folder, current_file);
 
 	FILE *file = fopen(file_path, "w");
 	if (file)
@@ -141,25 +279,12 @@ void save_file_content()
 	}
 }
 
-void on_save_button_clicked(GtkButton *button, gpointer user_data)
-{
-	save_file_content();
-}
-
-
-void restart_program(GtkWidget *widget, gpointer data)
-{
-	printf("Program Reloaded...\n");
-	char *args[] = {pm, NULL};
-	execvp(args[0], args);
-}
-
 void load_file_list()
 {
 	const char *home = getenv("HOME");
 	const char *notes_dir = "/.local/share/sgnotes/";
 	char notes_path[1024];
-	snprintf(notes_path, sizeof(notes_path), "%s%s", home, notes_dir);
+	snprintf(notes_path, sizeof(notes_path), "%s%s%s", home, notes_dir, current_folder);
 
 	DIR *dir;
 	struct dirent *entry;
@@ -170,29 +295,60 @@ void load_file_list()
 		{
 			if (entry->d_type == DT_REG) // Disable showing directories
 			{
-				gtk_list_box_insert(GTK_LIST_BOX(list), gtk_label_new(entry->d_name), -1);
+				GtkWidget *label = gtk_label_new(entry->d_name);
+				gtk_label_set_xalign(GTK_LABEL(label), 0.0);
+				gtk_list_box_insert(GTK_LIST_BOX(list), label, -1);
+				gtk_label_set_line_wrap(GTK_LABEL(label), TRUE);
+				
 			}
 		}
 		closedir(dir);
 	}
 }
 
-void clear_file_list()
+int remove_recursive(const char *path)
 {
-	GList *children, *iter;
-	children = gtk_container_get_children(GTK_CONTAINER(list));
-	for (iter = children; iter != NULL; iter = g_list_next(iter))
-	{
-		GtkWidget *row = GTK_WIDGET(iter->data);
-		gtk_container_remove(GTK_CONTAINER(list), row);
-	}
-	g_list_free(children);
-}
+	struct dirent *entry;
+	DIR *dir = opendir(path);
 
-void delfromlist(GtkListBox *list, GtkListBoxRow *row)
-{
-	gtk_container_remove(GTK_CONTAINER(list), GTK_WIDGET(row));
-	gtk_widget_destroy(GTK_WIDGET(row));
+	if (!dir)
+	{
+		return -1;
+	}
+
+	while ((entry = readdir(dir)))
+	{
+		if (strcmp(entry->d_name, ".") && strcmp(entry->d_name, ".."))
+		{
+			char full_path[PATH_MAX];
+			snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
+			if (entry->d_type == DT_DIR)
+			{
+				if (remove_recursive(full_path) != 0)
+				{
+					closedir(dir);
+					return -1; 
+				}
+			}
+			else 
+			{
+				if (remove(full_path) != 0)
+				{
+					closedir(dir);
+					return -1; 
+				}
+			}
+		}
+	}
+
+	closedir(dir);
+
+	if (rmdir(path) != 0)
+	{
+		return -1;
+	}
+
+	return 0;
 }
 
 void delete_current_file()
@@ -205,7 +361,10 @@ void delete_current_file()
 	const char *home = getenv("HOME");
 	const char *notes_dir = "/.local/share/sgnotes/";
 	char file_path[1024];
-	snprintf(file_path, sizeof(file_path), "%s%s%s", home, notes_dir, current_file);
+	char data_path[1024];
+	snprintf(file_path, sizeof(file_path), "%s%s%s/%s", home, notes_dir, current_folder, current_file);
+	snprintf(data_path, sizeof(data_path), "%s%s%s/%s_files", home, notes_dir, current_folder, current_file);
+
 
 	if (remove(file_path) == 0)
 	{
@@ -215,7 +374,8 @@ void delete_current_file()
 		GtkListBoxRow *selected_row = gtk_list_box_get_selected_row(GTK_LIST_BOX(list));
 		if (selected_row != NULL)
 		{
-			delfromlist(GTK_LIST_BOX(list), selected_row);
+			gtk_container_remove(GTK_CONTAINER(list), GTK_WIDGET(selected_row));
+			gtk_widget_destroy(GTK_WIDGET(selected_row));
 		}
 	}
 	else
@@ -227,7 +387,22 @@ void delete_current_file()
 		gtk_dialog_run(GTK_DIALOG(error_dialog));
 		gtk_widget_destroy(error_dialog);
 	}
+	if (remove_recursive(data_path) == 0)
+	{
+	printf("Directory removed: %s", data_path);
+	}
+	else
+	{
+		// Error handler
+		/*GtkWidget *error_dialog = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "Can't delete directory: '%s'", data_path);
+		gtk_window_set_position(GTK_WINDOW(error_dialog), GTK_WIN_POS_CENTER);
+		gtk_window_set_title(GTK_WINDOW(error_dialog), "Error deleting directory");
+		gtk_dialog_run(GTK_DIALOG(error_dialog));
+		gtk_widget_destroy(error_dialog);*/
+		g_print("Error deleting data path, maybe this note don't have pictures");
+	}
 }
+
 
 void on_delete_button_clicked(GtkButton *button, gpointer user_data)
 {
@@ -253,8 +428,7 @@ void load_file_content(const char *filename)
 	const char *home = getenv("HOME");
 	const char *notes_dir = "/.local/share/sgnotes/";
 	char file_path[1024];
-	snprintf(file_path, sizeof(file_path), "%s%s%s", home, notes_dir, filename);
-
+	snprintf(file_path, sizeof(file_path), "%s%s%s/%s", home, notes_dir, current_folder, filename);
 	FILE *file = fopen(file_path, "r");
 	if (file)
 	{
@@ -286,9 +460,18 @@ void on_list_item_selected(GtkListBox *box, GtkListBoxRow *row, gpointer user_da
 {
 	GtkWidget *label = gtk_bin_get_child(GTK_BIN(row));
 	const char *filename = gtk_label_get_text(GTK_LABEL(label));
-	gtk_widget_show(textbox_grid);
+	//gtk_widget_show(textbox_grid);
 	gtk_widget_show(scrolled_txt);
+	gtk_widget_show(pic_button);
+	gtk_widget_show(scrolled_treeview);
+	gtk_widget_show(treeview);
+	gtk_widget_show(submenu_filelist_item2);
+	gtk_widget_show(submenu_filelist_item3);
+	gtk_widget_show(submenu_imglist_item3);
+	gtk_widget_set_size_request(scrolled_list, 100, 150);
+	gtk_widget_set_hexpand(scrolled_list, FALSE);
 	load_file_content(filename);
+	add_images_from_directory(GTK_WIDGET(treeview), user_data);
 }
 
 
@@ -300,7 +483,7 @@ static void save_file(const gchar *filename)
 
 	const char *home_dir = g_get_home_dir();
 
-	gchar *dir_path = g_build_filename(home_dir, ".local", "share", "sgnotes", NULL);
+	gchar *dir_path = g_build_filename(home_dir, ".local", "share", "sgnotes", current_folder, NULL);
 	if (!g_file_test(dir_path, G_FILE_TEST_EXISTS))
 		g_mkdir_with_parents(dir_path, 0700);
 
@@ -319,13 +502,6 @@ static void save_file(const gchar *filename)
 	g_free(dir_path);
 }
 
-void additem(GtkButton *button, GtkListBox *list, const gchar *text)
-{
-	GtkWidget *label = gtk_label_new(text);
-	gtk_list_box_insert(GTK_LIST_BOX(list), label, -1);
-	gtk_widget_show_all(GTK_WIDGET(list));
-}
-
 void saveToFile(const gchar *text)
 {
 	gchar *full_path;
@@ -333,7 +509,7 @@ void saveToFile(const gchar *text)
 
 	const char *home_dir = g_get_home_dir();
 
-	gchar *dir_path = g_build_filename(home_dir, ".local", "share", "sgnotes", NULL);
+	gchar *dir_path = g_build_filename(home_dir, ".local", "share", "sgnotes", current_folder, NULL);
 	if (!g_file_test(dir_path, G_FILE_TEST_EXISTS))
 		g_mkdir_with_parents(dir_path, 0700);
 
@@ -367,7 +543,11 @@ void saveToFile(const gchar *text)
 	{
 		fclose(file);
 		g_print("Note saved to %s\n", full_path);
-		 additem(GTK_BUTTON(submenu_item1), GTK_LIST_BOX(list), text);
+		GtkWidget *label = gtk_label_new(text);
+		gtk_list_box_insert(GTK_LIST_BOX(list), label, -1);
+						gtk_label_set_xalign(GTK_LABEL(label), 0.0);
+				gtk_label_set_line_wrap(GTK_LABEL(label), TRUE);
+		gtk_widget_show_all(GTK_WIDGET(list));
 		g_free(full_path);
 	}
 	else
@@ -395,6 +575,8 @@ static void on_rename_button_clicked(GtkButton *button, gpointer user_data)
 	const gchar *text = "";
 	gchar *output;
 	gchar *input;
+	gchar *imgoutput;
+	gchar *imginput;
 	FILE *file;
 
 	dialog;
@@ -425,7 +607,7 @@ static void on_rename_button_clicked(GtkButton *button, gpointer user_data)
 		text = gtk_entry_get_text(GTK_ENTRY(entry));
 		const char *home_dir = g_get_home_dir();
 
-		gchar *dir_path = g_build_filename(home_dir, ".local", "share", "sgnotes", NULL);
+		gchar *dir_path = g_build_filename(home_dir, ".local", "share", "sgnotes", current_folder, NULL);
 		if (!g_file_test(dir_path, G_FILE_TEST_EXISTS))
 			g_mkdir_with_parents(dir_path, 0700);
 		output = g_build_filename(dir_path, text, NULL);
@@ -452,10 +634,22 @@ static void on_rename_button_clicked(GtkButton *button, gpointer user_data)
 			}
 		}
 		input = g_build_filename(dir_path, current_file, NULL);
+		
+		char img_path[255];
+		strcpy(img_path, input);
+		strcat(img_path, "_files");
+
+		char img_path2[255];
+		strcpy(img_path2, output);
+		strcat(img_path2, "_files");
+		
+		imginput = g_build_filename(img_path, NULL);
+		imgoutput = g_build_filename(img_path2, NULL);
+		
 		strcpy(current_file, text);
 		if (rename(input, output) == 0)
 		{
-			printf("File moved succesfully.\n");
+			printf("File moved successfully: %s > %s\n", input, output);
 				GtkListBoxRow *selected_row = gtk_list_box_get_selected_row(GTK_LIST_BOX(list));
 		if (selected_row != NULL)
 		{
@@ -470,6 +664,15 @@ static void on_rename_button_clicked(GtkButton *button, gpointer user_data)
 			perror("Error moving file");
 		}
 }
+		if (rename(imginput, imgoutput) == 0)
+		{
+			printf("File moved successfully: %s > %s\n", imginput, imgoutput);
+		}
+		else
+		{
+			perror("Error moving file");
+		}
+
 
 	}
 	else if (result == GTK_RESPONSE_CANCEL)
@@ -478,6 +681,92 @@ static void on_rename_button_clicked(GtkButton *button, gpointer user_data)
 	}
 	gtk_widget_destroy(dialog);
 }
+
+static void on_submenu_imglist_item1_selected()
+{
+const char *home = getenv("HOME");
+		const char *notes_dir = "/.local/share/sgnotes/";
+		char file_path[1024];
+		file_path[0] = '\0';
+
+		snprintf(file_path, sizeof(file_path), "%s%s%s/%s_files/%d.png", home, notes_dir, current_folder, current_file, selfromtreeview);
+
+		char *command = g_strdup_printf("xdg-open \"%s\"", file_path);
+		system(command);
+		g_free(command);
+}
+
+int numeric_file_compare(const void *a, const void *b)
+{
+	const char *str1 = *(const char **)a;
+	const char *str2 = *(const char **)b;
+
+	int num1 = atoi(str1);
+	int num2 = atoi(str2);
+
+	return num1 - num2;
+}
+
+static void on_submenu_imglist_item2_selected(GtkWidget *widget, gpointer user_data)
+{
+	const char *home = getenv("HOME");
+	const char *notes_dir = "/.local/share/sgnotes/";
+	char file_path[1024];
+	file_path[0] = '\0';
+
+	snprintf(file_path, sizeof(file_path), "%s%s%s/%s_files/%d.png", home, notes_dir, current_folder, current_file, selfromtreeview);
+
+	if (remove(file_path) == 0)
+	{
+		printf("deleted file:%s\n", file_path );
+		DIR *dir;
+		struct dirent *entry;
+		char folder_path[1024];
+		snprintf(folder_path, sizeof(folder_path), "%s%s%s/%s_files", home, notes_dir, current_folder, current_file);
+
+		dir = opendir(folder_path);
+		if (dir != NULL)
+		{
+			char **file_names = NULL;
+			int file_count = 0;
+			while ((entry = readdir(dir)) != NULL)
+			{
+				if (entry->d_type == DT_REG)
+				{
+					if (file_count == 0)
+					{
+						file_names = (char **)malloc(sizeof(char *));
+					}
+					else
+					{
+						file_names = (char **)realloc(file_names, (file_count + 1) * sizeof(char *));
+					}
+					file_names[file_count] = strdup(entry->d_name);
+					file_count++;
+				}
+			}
+			closedir(dir);
+			qsort(file_names, file_count, sizeof(char *), numeric_file_compare);
+			for (int i = 0; i < file_count; i++)
+			{
+				char old_name[1024];
+				char new_name[1024];
+				snprintf(old_name, sizeof(old_name), "%s/%s", folder_path, file_names[i]);
+				snprintf(new_name, sizeof(new_name), "%s/%d.png", folder_path, i);
+				rename(old_name, new_name);
+				free(file_names[i]);
+			}
+			free(file_names);
+		}
+		gtk_list_store_clear(GTK_LIST_STORE(store));
+		add_images_from_directory(GTK_WIDGET(treeview), user_data);
+	}
+	else
+	{
+		printf("Error deleting file:%s\n", file_path );
+	}
+}
+
 
 static void on_submenu_item1_selected(GtkWidget *widget, gpointer data)
 {
@@ -530,7 +819,8 @@ static void on_submenu_item2_selected(GtkWidget *widget, gpointer data)
 	snprintf(config_file_path, sizeof(config_file_path), "%s/.config/sgnotes.conf", home_dir);
 
 	FILE *config_file = fopen(config_file_path, "r");
-	if (config_file == NULL) {
+	if (config_file == NULL)
+	{
 		wraptext = 0;
 	} else {
 		char line[256];
@@ -580,8 +870,85 @@ void on_submenu_item3_selected(GtkMenuItem *menuitem, gpointer userdata)
 	gtk_widget_destroy(dialog);
 }
 
+gboolean on_treeview_clicked(GtkWidget *treeview, GdkEventButton *event, gpointer data)
+{
+	if (event->button == 3)
+	{
+		GtkTreePath *path = NULL;
+		GtkTreeViewColumn *column = NULL;
+		if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(treeview), (gint)event->x, (gint)event->y, &path, &column, NULL, NULL))
+		{
+			gchar *path_string = gtk_tree_path_to_string(path);
+			selfromtreeview = atoi(path_string);
+			g_print("Picture selected: %d\n", selfromtreeview);
+			GtkWidget *submenu = GTK_WIDGET(data);
+			gtk_menu_popup_at_pointer(GTK_MENU(submenu), NULL);
+			g_free(path_string);
+			gtk_tree_path_free(path);
+			return TRUE;
+		}
+	}
+	else if (event->button == 1)
+	{
+			GtkTreePath *path = NULL;
+		GtkTreeViewColumn *column = NULL;
+		if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(treeview), (gint)event->x, (gint)event->y, &path, &column, NULL, NULL))
+		{
+			gchar *path_string = gtk_tree_path_to_string(path);
+			selfromtreeview = atoi(path_string);
+			g_print("Picture selected: %d\n", selfromtreeview);
+			on_submenu_imglist_item1_selected();
+			g_free(path_string);
+			gtk_tree_path_free(path);
+			return TRUE;
+		}
+	}
+	return TRUE;
+}
+
+gboolean on_listbox_clicked(GtkWidget *listbox, GdkEventButton *event, gpointer data)
+{
+	if (event->button == 3)
+	{
+		GtkListBoxRow *row = gtk_list_box_get_row_at_y(GTK_LIST_BOX(list), (gint)event->y);
+		if (row != NULL)
+		{
+			selfromlistbox = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "index"));
+			g_print("Picture selected: %d\n", selfromlistbox);
+			GtkWidget *submenu = GTK_WIDGET(data);
+			gtk_menu_popup_at_pointer(GTK_MENU(submenu), NULL);
+			return TRUE;
+		}
+	}
+	else if (event->button == 1)
+	{
+		GtkListBoxRow *row = gtk_list_box_get_row_at_y(GTK_LIST_BOX(list), (gint)event->y);
+		if (row != NULL)
+		{
+			selfromlistbox = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "index"));
+			g_print("Picture selected: %d\n", selfromlistbox);
+			on_submenu_imglist_item1_selected();
+			return TRUE;
+		}
+	}
+	return TRUE;
+}
+
 gboolean timeout_callback(gpointer user_data)
 {
+	if (current_file[0] == '\0')
+	{
+		//gtk_widget_hide(textbox_grid);
+		gtk_widget_hide(scrolled_txt);
+		gtk_widget_hide(pic_button);
+		gtk_widget_hide(treeview);
+		gtk_widget_hide(scrolled_treeview);
+		gtk_widget_hide(submenu_filelist_item2);
+		gtk_widget_hide(submenu_filelist_item3);
+		gtk_widget_hide(submenu_imglist_item3);
+		gtk_widget_set_hexpand(scrolled_list, TRUE);
+	}
+
 	on_save_button_clicked(NULL, user_data);
 	return G_SOURCE_CONTINUE;
 }
