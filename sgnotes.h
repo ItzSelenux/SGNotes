@@ -1,4 +1,5 @@
 #include <gtk/gtk.h>
+#include <gtksourceview/gtksource.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <string.h>
 #include <stdlib.h>
@@ -50,6 +51,8 @@ typedef struct
 	gchar *path;
 }ImageInfo;
 
+void null()
+{}
 
 void readconf()
 {
@@ -245,12 +248,29 @@ gboolean on_button_press(GtkWidget *widget, GdkEventButton *event, gpointer data
 	}
 	return FALSE;
 }
+gboolean on_list_press(GtkWidget *widget, GdkEventButton *event, gpointer data)
+{
+	if (event->type == GDK_BUTTON_PRESS && event->button == 3)
+	{
+		GtkWidget *submenu = GTK_WIDGET(data);
+		return TRUE;
+	}
+	return FALSE;
+}
+// Entry dialogs behavior
+static gboolean on_entry_key_press(GtkWidget *widget, GdkEventKey *event, GtkDialog *dialog) {
+	if (event->keyval == GDK_KEY_Return || event->keyval == GDK_KEY_KP_Enter) {
+		gtk_dialog_response(dialog, GTK_RESPONSE_OK);
+		return TRUE;
+	}
+	return FALSE;
+}
 
 static void on_entry_changed(GtkEditable *editable, gpointer user_data)
 {
 	GtkWidget *entry = GTK_WIDGET(editable);
 	const gchar *text = gtk_entry_get_text(GTK_ENTRY(entry));
-	gchar *cleaned_text = g_strdelimit(g_strdup(text), "/\\", '\0');
+	gchar *cleaned_text = g_strdelimit(g_strdup(text), "/\\\n", '\0');
 	gtk_entry_set_text(GTK_ENTRY(entry), cleaned_text);
 	g_free(cleaned_text);
 }
@@ -601,6 +621,7 @@ static void on_rename_button_clicked(GtkButton *button, gpointer user_data)
 		entry = gtk_entry_new();
 		gtk_container_add(GTK_CONTAINER(content_area), entry);
 		g_signal_connect(G_OBJECT(entry), "changed", G_CALLBACK(on_entry_changed), dialog);
+		g_signal_connect(G_OBJECT(entry), "key-press-event", G_CALLBACK(on_entry_key_press), dialog);
 		gtk_widget_show_all(dialog);
 
 	gint result = gtk_dialog_run(GTK_DIALOG(dialog));
@@ -769,42 +790,40 @@ static void on_submenu_imglist_item2_selected(GtkWidget *widget, gpointer user_d
 	}
 }
 
-
-static void on_submenu_item1_selected(GtkWidget *widget, gpointer data)
-{
-	dialog;
+static void on_submenu_item1_selected(GtkWidget *widget, gpointer data) {
+	GtkWidget *dialog;
 	GtkWidget *content_area;
 	GtkWidget *entry;
-	GtkWidget *label;
-	GtkWidget *ok_button;
-	GtkWidget *cancel_button;
-	dialog = gtk_dialog_new_with_buttons("New Note:",
-	GTK_WINDOW(data),
-	GTK_DIALOG_MODAL,
-	"OK",
-	GTK_RESPONSE_OK,
-	"Cancel", GTK_RESPONSE_CANCEL, NULL);
+	gint result;
 
-	gtk_widget_set_size_request(dialog, 333, -1);
+	dialog = gtk_dialog_new_with_buttons("New Note:",
+		GTK_WINDOW(data),
+		GTK_DIALOG_MODAL,
+		"OK",
+		GTK_RESPONSE_OK,
+		"Cancel",
+		GTK_RESPONSE_CANCEL,
+		NULL);
+
 	content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
 
 	entry = gtk_entry_new();
 	gtk_container_add(GTK_CONTAINER(content_area), entry);
 	g_signal_connect(G_OBJECT(entry), "changed", G_CALLBACK(on_entry_changed), dialog);
+	g_signal_connect(G_OBJECT(entry), "key-press-event", G_CALLBACK(on_entry_key_press), dialog);
+
 	gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
 	gtk_widget_show_all(dialog);
 
-	gint result = gtk_dialog_run(GTK_DIALOG(dialog));
+	result = gtk_dialog_run(GTK_DIALOG(dialog));
 
-	if (result == GTK_RESPONSE_OK)
-	{
+	if (result == GTK_RESPONSE_OK) {
 		const gchar *text = gtk_entry_get_text(GTK_ENTRY(entry));
 		saveToFile(text);
-	}
-	else if (result == GTK_RESPONSE_CANCEL)
-	{
+	} else if (result == GTK_RESPONSE_CANCEL) {
 		g_print("\n");
 	}
+
 	gtk_widget_destroy(dialog);
 }
 
@@ -905,6 +924,7 @@ gboolean on_treeview_clicked(GtkWidget *treeview, GdkEventButton *event, gpointe
 			return TRUE;
 		}
 	}
+	
 	return TRUE;
 }
 
@@ -953,7 +973,7 @@ gboolean timeout_callback(gpointer user_data)
 	}
 	else
 	{
-	snprintf(markup_buffer, sizeof(markup_buffer), "<b>%s- SGNotes</b>", current_file);
+	snprintf(markup_buffer, sizeof(markup_buffer), "<b>%s - SGNotes</b>", current_file);
 	gtk_label_set_markup(GTK_LABEL(wintitle), markup_buffer);
 	}
 

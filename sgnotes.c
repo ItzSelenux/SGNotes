@@ -128,7 +128,7 @@ g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
 		list = gtk_list_box_new();
 			gtk_container_add(GTK_CONTAINER(scrolled_list), list);
-		text_view = gtk_text_view_new();
+		text_view = gtk_source_view_new();
 			gtk_container_add(GTK_CONTAINER(scrolled_txt), text_view);
 			if (wraptext == 1)
 			{
@@ -138,12 +138,16 @@ g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 			{
 				gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(text_view), GTK_WRAP_NONE);
 			}
-			
+
 		scrolled_treeview = gtk_scrolled_window_new(NULL, NULL);
 		gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_treeview), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 		gtk_widget_set_size_request(scrolled_treeview, 100, 150);
-			
+
 		buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
+		GtkSourceLanguageManager *language_manager = gtk_source_language_manager_get_default();
+		GtkSourceLanguage *language = gtk_source_language_manager_get_language(language_manager, "markdown");
+		gtk_source_buffer_set_language(buffer, language);
+		
 		rename_button = gtk_button_new_with_label("Rename");
 		delete_button = gtk_button_new_with_label("Delete Note");
 		pic_button = gtk_button_new_with_label("Add Picture");
@@ -194,6 +198,7 @@ g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
 	gtk_widget_add_accelerator(submenu_item1, "activate", accel_group, GDK_KEY_N, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
 	g_signal_connect(window, "button-press-event", G_CALLBACK(on_button_press), submenu);
+	g_signal_connect(list, "button-press-event", G_CALLBACK(on_list_press), submenu_imglist);
 	g_signal_connect(treeview, "button-press-event", G_CALLBACK(on_treeview_clicked), submenu_imglist);
 	//g_signal_connect(list, "button-press-event", G_CALLBACK(on_listbox_clicked), submenu_filelist);
 	load_file_list();
@@ -201,7 +206,6 @@ g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 	g_timeout_add(100, timeout_callback, NULL);
 	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
 	gtk_widget_show_all(window);
-
 
 	//gtk_widget_hide(textbox_grid);
 	gtk_widget_hide(scrolled_txt);
