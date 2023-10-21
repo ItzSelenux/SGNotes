@@ -15,6 +15,7 @@ GdkPixbuf *icon;
 GtkAccelGroup *accel_group;
 int wraptext;
 int fix;
+int showfind;
 char *pm;
 GtkWidget *dialog;
 GtkWidget *scrolled_treeview;
@@ -28,6 +29,10 @@ static GtkWidget *window;
 static GtkWidget *list;
 GtkWidget *wintitle;
 static GtkWidget *text_view;
+	GtkWidget *search_entry;
+	GtkWidget *next_button;
+	GtkWidget *prev_button;
+	GtkTextMark *last_found = NULL;
 static GtkWidget *textbox_grid;
 static GtkWidget *save_button;
 static GtkWidget *rename_button;
@@ -39,20 +44,97 @@ static GtkTextBuffer *buffer;
 GtkListStore *store; //img store
 
 static char current_folder[1024] = "";
-static char current_file[1024] = ""; // Store Actual file name
+static char current_file[1024] = "";
 char config_file_path[256];
 char markup_buffer[256];
 
 int selfromtreeview;
 int selfromlistbox;
+
 typedef struct
 {
 	GdkPixbuf *pixbuf;
 	gchar *path;
 }ImageInfo;
 
-void null()
-{}
+void find(GtkTextView *text_view, const gchar *text, GtkTextIter *iter)
+{
+	GtkTextIter mstart, mend;
+	gboolean found;
+	GtkTextBuffer *buffer;
+
+	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
+	GtkTextIter start_iter, end_iter;
+	gtk_text_buffer_get_start_iter(buffer, &start_iter);
+	gtk_text_buffer_get_end_iter(buffer, &end_iter);
+	gchar *buffer_text = gtk_text_buffer_get_text(buffer, &start_iter, &end_iter, FALSE);
+
+	gchar *match = strcasestr(buffer_text, text);
+
+	if (match != NULL)
+	{
+		gtk_text_buffer_get_iter_at_offset(buffer, &mstart, match - buffer_text);
+		gtk_text_buffer_get_iter_at_offset(buffer, &mend, (match - buffer_text) + strlen(text));
+
+		gtk_text_buffer_select_range(buffer, &mstart, &mend);
+
+		GtkTextMark *last_found = gtk_text_buffer_create_mark(buffer, NULL, &mend, FALSE);
+		gtk_text_view_scroll_to_mark(GTK_TEXT_VIEW(text_view), last_found, 0.0, TRUE, 0.5, 0.5);
+	}
+
+	g_free(buffer_text);
+}
+
+
+void search_entry_changed(GtkEditable *editable, gpointer user_data)
+{
+	const gchar *text;
+	GtkTextBuffer *buffer;
+	GtkTextIter iter;
+
+	text = gtk_entry_get_text(GTK_ENTRY(editable));
+
+	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
+	gtk_text_buffer_get_start_iter(buffer, &iter);
+
+	find(GTK_TEXT_VIEW(text_view), text, &iter);
+}
+
+void next_button_clicked(GtkWidget *next_button)
+{
+	if (last_found != NULL) {
+		const gchar *text;
+		GtkTextBuffer *buffer;
+		GtkTextIter iter;
+
+		text = gtk_entry_get_text(GTK_ENTRY(search_entry));
+
+		buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
+		gtk_text_buffer_get_iter_at_mark(buffer, &iter, last_found);
+		find(GTK_TEXT_VIEW(text_view), text, &iter);
+	}
+}
+
+void prev_button_clicked(GtkWidget *prev_button)
+{
+	if (last_found != NULL) {
+		const gchar *text;
+		GtkTextBuffer *buffer;
+		GtkTextIter iter, start, end;
+
+		text = gtk_entry_get_text(GTK_ENTRY(search_entry));
+
+		buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
+		gtk_text_buffer_get_iter_at_mark(buffer, &iter, last_found);
+
+		if (gtk_text_iter_backward_search(&iter, text, 0, &start, &end, NULL)) {
+			gtk_text_buffer_select_range(buffer, &start, &end);
+			gtk_text_buffer_delete_mark(buffer, last_found);
+			last_found = gtk_text_buffer_create_mark(buffer, NULL, &start, FALSE);
+			gtk_text_view_scroll_to_mark(GTK_TEXT_VIEW(text_view), last_found, 0.0, TRUE, 0.5, 0.5);
+		}
+	}
+}
 
 void readconf()
 {
@@ -237,7 +319,30 @@ void add_image(GtkWidget *widget, gpointer user_data)
 	gtk_widget_destroy(dialog);
 }
 
-
+gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer data)
+{
+	if ((event->state & GDK_CONTROL_MASK) && (event->keyval == GDK_KEY_f))
+	{
+		if (current_file[0] == '\0')
+		{
+		}
+		else
+		{
+			if (showfind == 0)
+			{
+				gtk_widget_show(textbox_grid);
+				showfind = 1;
+			}
+			else if (showfind == 1)
+			{
+				gtk_widget_hide(textbox_grid);
+				showfind = 0;
+			}
+		}
+		return TRUE;
+	}
+	return FALSE;
+}
 gboolean on_button_press(GtkWidget *widget, GdkEventButton *event, gpointer data)
 {
 	if (event->type == GDK_BUTTON_PRESS && event->button == 3)
@@ -246,6 +351,7 @@ gboolean on_button_press(GtkWidget *widget, GdkEventButton *event, gpointer data
 		gtk_menu_popup_at_pointer(GTK_MENU(submenu), NULL);
 		return TRUE;
 	}
+	
 	return FALSE;
 }
 gboolean on_list_press(GtkWidget *widget, GdkEventButton *event, gpointer data)

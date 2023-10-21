@@ -23,6 +23,7 @@ for(int i = 1; i < argc; i++)
 	printf("CSD Disabled, using fallback display \n");
 	}
 }
+showfind = 0;
 
 readconf();
 
@@ -138,6 +139,9 @@ g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 			{
 				gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(text_view), GTK_WRAP_NONE);
 			}
+			search_entry = gtk_entry_new();
+				next_button = gtk_button_new_with_label("Next");
+				prev_button = gtk_button_new_with_label("Previous");
 
 		scrolled_treeview = gtk_scrolled_window_new(NULL, NULL);
 		gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_treeview), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
@@ -162,15 +166,16 @@ g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 		gtk_tree_view_column_set_expand(column, TRUE);
 		gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(treeview), FALSE);
 
-/*
+
 		textbox_grid = gtk_grid_new();
 		gtk_grid_set_column_homogeneous(GTK_GRID(textbox_grid), TRUE);
-			gtk_grid_attach(GTK_GRID(textbox_grid), rename_button, 0, 1, 1, 1);
-			gtk_grid_attach(GTK_GRID(textbox_grid), delete_button, 1, 1, 1, 1);
-*/
+			gtk_grid_attach(GTK_GRID(textbox_grid), search_entry, 0, 1, 1, 1);
+			gtk_grid_attach(GTK_GRID(textbox_grid), prev_button, 1, 1, 1, 1);
+			gtk_grid_attach(GTK_GRID(textbox_grid), next_button, 2, 1, 1, 1);
+
 		gtk_grid_attach(GTK_GRID(grid), scrolled_list, 0, 0, 1, 2);
 		gtk_grid_attach(GTK_GRID(grid), scrolled_txt, 1, 0, 1, 1);
-//		gtk_grid_attach(GTK_GRID(grid), textbox_grid, 1, 0, 1, 1);
+		gtk_grid_attach(GTK_GRID(grid), textbox_grid, 1, 1, 1, 1);
 		gtk_grid_attach(GTK_GRID(grid), scrolled_treeview, 2, 0, 1, 2);
 		//gtk_grid_attach(GTK_GRID(grid), pic_button, 2, 0, 1, 1);
 
@@ -198,8 +203,12 @@ g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
 	gtk_widget_add_accelerator(submenu_item1, "activate", accel_group, GDK_KEY_N, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
 	g_signal_connect(window, "button-press-event", G_CALLBACK(on_button_press), submenu);
-	g_signal_connect(list, "button-press-event", G_CALLBACK(on_list_press), submenu_imglist);
+	g_signal_connect(window, "key-press-event", G_CALLBACK(on_key_press), submenu);
+	g_signal_connect(list, "button-press-event", G_CALLBACK(on_list_press), NULL);
 	g_signal_connect(treeview, "button-press-event", G_CALLBACK(on_treeview_clicked), submenu_imglist);
+	g_signal_connect(G_OBJECT(search_entry), "changed", G_CALLBACK(search_entry_changed), NULL);
+	g_signal_connect(G_OBJECT(next_button), "clicked", G_CALLBACK(next_button_clicked), NULL);
+	g_signal_connect(G_OBJECT(prev_button), "clicked", G_CALLBACK(prev_button_clicked), NULL);
 	//g_signal_connect(list, "button-press-event", G_CALLBACK(on_listbox_clicked), submenu_filelist);
 	load_file_list();
 
@@ -210,6 +219,7 @@ g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 	//gtk_widget_hide(textbox_grid);
 	gtk_widget_hide(scrolled_txt);
 	gtk_widget_hide(pic_button);
+	gtk_widget_hide(textbox_grid);
 	gtk_widget_hide(treeview);
 	gtk_widget_hide(scrolled_treeview);
 	gtk_main();
