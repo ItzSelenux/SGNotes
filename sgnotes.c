@@ -168,10 +168,10 @@ g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
 
 		textbox_grid = gtk_grid_new();
-		gtk_grid_set_column_homogeneous(GTK_GRID(textbox_grid), TRUE);
 			gtk_grid_attach(GTK_GRID(textbox_grid), search_entry, 0, 1, 1, 1);
 			gtk_grid_attach(GTK_GRID(textbox_grid), prev_button, 1, 1, 1, 1);
 			gtk_grid_attach(GTK_GRID(textbox_grid), next_button, 2, 1, 1, 1);
+				gtk_widget_set_hexpand(search_entry, TRUE);
 
 		gtk_grid_attach(GTK_GRID(grid), scrolled_list, 0, 0, 1, 2);
 		gtk_grid_attach(GTK_GRID(grid), scrolled_txt, 1, 0, 1, 1);
@@ -215,8 +215,6 @@ g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 	g_timeout_add(100, timeout_callback, NULL);
 	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
 	gtk_widget_show_all(window);
-
-	//gtk_widget_hide(textbox_grid);
 	gtk_widget_hide(scrolled_txt);
 	gtk_widget_hide(pic_button);
 	gtk_widget_hide(textbox_grid);

@@ -57,32 +57,23 @@ typedef struct
 	gchar *path;
 }ImageInfo;
 
-void find(GtkTextView *text_view, const gchar *text, GtkTextIter *iter)
+void find (GtkTextView *text_view, const gchar *text, GtkTextIter *iter)
 {
-	GtkTextIter mstart, mend;
-	gboolean found;
-	GtkTextBuffer *buffer;
+  GtkTextIter mstart, mend;
+  gboolean found;
+  GtkTextBuffer *buffer;
+  GtkTextMark *last_pos;
 
-	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
-	GtkTextIter start_iter, end_iter;
-	gtk_text_buffer_get_start_iter(buffer, &start_iter);
-	gtk_text_buffer_get_end_iter(buffer, &end_iter);
-	gchar *buffer_text = gtk_text_buffer_get_text(buffer, &start_iter, &end_iter, FALSE);
+  buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (text_view));
+  found = gtk_text_iter_forward_search (iter, text, 0, &mstart, &mend, NULL);
 
-	gchar *match = strcasestr(buffer_text, text);
-
-	if (match != NULL)
+  if (found)
 	{
-		gtk_text_buffer_get_iter_at_offset(buffer, &mstart, match - buffer_text);
-		gtk_text_buffer_get_iter_at_offset(buffer, &mend, (match - buffer_text) + strlen(text));
-
-		gtk_text_buffer_select_range(buffer, &mstart, &mend);
-
-		GtkTextMark *last_found = gtk_text_buffer_create_mark(buffer, NULL, &mend, FALSE);
-		gtk_text_view_scroll_to_mark(GTK_TEXT_VIEW(text_view), last_found, 0.0, TRUE, 0.5, 0.5);
+	  gtk_text_buffer_select_range (buffer, &mstart, &mend);
+	  last_pos = gtk_text_buffer_create_mark (buffer, "last_pos", 
+											  &mend, FALSE);
+	  gtk_text_view_scroll_mark_onscreen (text_view, last_pos);
 	}
-
-	g_free(buffer_text);
 }
 
 
@@ -102,35 +93,41 @@ void search_entry_changed(GtkEditable *editable, gpointer user_data)
 
 void next_button_clicked(GtkWidget *next_button)
 {
-	if (last_found != NULL) {
-		const gchar *text;
-		GtkTextBuffer *buffer;
-		GtkTextIter iter;
+	const gchar *text;
+	GtkTextBuffer *buffer;
+	GtkTextMark *last_pos;
+	GtkTextIter iter;
 
-		text = gtk_entry_get_text(GTK_ENTRY(search_entry));
+	text = gtk_entry_get_text(GTK_ENTRY(search_entry));
 
-		buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
-		gtk_text_buffer_get_iter_at_mark(buffer, &iter, last_found);
-		find(GTK_TEXT_VIEW(text_view), text, &iter);
-	}
+	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
+
+	last_pos = gtk_text_buffer_get_mark(buffer, "last_pos");
+	if (last_pos == NULL)
+		find;
+
+	gtk_text_buffer_get_iter_at_mark(buffer, &iter, last_pos);
+	find(GTK_TEXT_VIEW(text_view), text, &iter);
 }
 
-void prev_button_clicked(GtkWidget *prev_button)
-{
+void prev_button_clicked(GtkWidget *prev_button) {
+	const gchar *text;
+	GtkTextBuffer *buffer;
+	GtkTextMark *last_found;
+	GtkTextIter iter, start, end;
+
+	text = gtk_entry_get_text(GTK_ENTRY(search_entry));
+	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
+	last_found = gtk_text_buffer_get_mark(buffer, "last_pos");
+
 	if (last_found != NULL) {
-		const gchar *text;
-		GtkTextBuffer *buffer;
-		GtkTextIter iter, start, end;
-
-		text = gtk_entry_get_text(GTK_ENTRY(search_entry));
-
-		buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
 		gtk_text_buffer_get_iter_at_mark(buffer, &iter, last_found);
 
 		if (gtk_text_iter_backward_search(&iter, text, 0, &start, &end, NULL)) {
 			gtk_text_buffer_select_range(buffer, &start, &end);
-			gtk_text_buffer_delete_mark(buffer, last_found);
-			last_found = gtk_text_buffer_create_mark(buffer, NULL, &start, FALSE);
+			gtk_text_mark_set_visible(last_found, FALSE);
+			last_found = gtk_text_buffer_create_mark(buffer, "last_pos", &start, FALSE);
+			gtk_text_mark_set_visible(last_found, TRUE);
 			gtk_text_view_scroll_to_mark(GTK_TEXT_VIEW(text_view), last_found, 0.0, TRUE, 0.5, 0.5);
 		}
 	}
@@ -331,15 +328,36 @@ gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer data)
 			if (showfind == 0)
 			{
 				gtk_widget_show(textbox_grid);
+				gtk_widget_grab_focus(GTK_WIDGET(search_entry));
 				showfind = 1;
 			}
 			else if (showfind == 1)
 			{
 				gtk_widget_hide(textbox_grid);
+				gtk_widget_grab_focus(GTK_WIDGET(text_view));
 				showfind = 0;
 			}
 		}
 		return TRUE;
+	}
+	else if (event->keyval == GDK_KEY_Escape && showfind == 1)
+	{
+		gtk_widget_hide(textbox_grid);
+		gtk_widget_grab_focus(GTK_WIDGET(text_view));
+		showfind = 0;
+	}
+	else if (event->keyval == GDK_KEY_Escape && showfind == 0)
+	{
+		current_file[0] = '\0';
+		gtk_widget_hide(scrolled_txt);
+		gtk_widget_hide(pic_button);
+		gtk_widget_hide(treeview);
+		gtk_widget_hide(scrolled_treeview);
+		gtk_widget_hide(submenu_filelist_item2);
+		gtk_widget_hide(submenu_filelist_item3);
+		gtk_widget_hide(submenu_imglist_item3);
+		gtk_widget_set_hexpand(scrolled_list, TRUE);
+		gtk_label_set_markup(GTK_LABEL(wintitle), "<b>Notes - SGNotes</b>");
 	}
 	return FALSE;
 }
