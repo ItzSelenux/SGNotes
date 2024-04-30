@@ -1,94 +1,83 @@
 #include "sgnotes.h"
+#include "events.h"
+#include "editor.h"
+#include "fmanip.h"
+#include "img.h"
 
 int main(int argc, char *argv[])
 {
-int nocsd = 0;
-store = gtk_list_store_new(1, GDK_TYPE_PIXBUF);
+	int nocsd = 0;
+	store = gtk_list_store_new(1, GDK_TYPE_PIXBUF);
 
-if (argc > 1 && strcmp(argv[1], "--") != 0)
-{
-	strncpy(current_folder, argv[1], sizeof(current_folder) - 1);
-}
-else
-{
-	strcpy(current_folder, "Default");
-}
-printf("current_folder: %s\n", current_folder);
-
-for(int i = 1; i < argc; i++)
-{
-	if(strcmp(argv[i], "--nocsd") == 0)
+	if (argc > 1 && strcmp(argv[1], "--") != 0)
 	{
-	nocsd = 1;
-	printf("CSD Disabled, using fallback display \n");
+		strncpy(current_folder, argv[1], sizeof(current_folder) - 1);
 	}
-}
-showfind = 0;
-
-readconf();
-
-gtk_init(&argc, &argv);
-// Create the main window
-GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-gtk_window_set_title(GTK_WINDOW(window), "SGNotes");
-gtk_container_set_border_width(GTK_CONTAINER(window), 10);
-gtk_widget_set_size_request(window, 666, 444);
-g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
-	theme = gtk_icon_theme_get_default();
-	info = gtk_icon_theme_lookup_icon(theme, "accessories-notes", 48, 0);
-	if (info != NULL)
+	else
 	{
-		icon = gtk_icon_info_load_icon(info, NULL);
-		gtk_window_set_icon(GTK_WINDOW(window), icon);
-		g_object_unref(icon);
-		g_object_unref(info);
+		strcpy(current_folder, "Default");
 	}
-	//accelerator header
+	printf("current_folder: %s\n", current_folder);
+
+	for(int i = 1; i < argc; i++)
+	{
+		if(strcmp(argv[i], "--nocsd") == 0)
+		{
+		nocsd = 1;
+		printf("CSD Disabled, using fallback display \n");
+		}
+	}
+	showfind = 0;
+
+	readconf();
+
+	gtk_init(&argc, &argv);
+	GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	gtk_window_set_title(GTK_WINDOW(window), "SGNotes");
+	gtk_container_set_border_width(GTK_CONTAINER(window), 10);
+	gtk_widget_set_size_request(window, 666, 444);
+	g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+		theme = gtk_icon_theme_get_default();
+		info = gtk_icon_theme_lookup_icon(theme, "accessories-notes", 48, 0);
+		if (info != NULL)
+		{
+			icon = gtk_icon_info_load_icon(info, NULL);
+			gtk_window_set_icon(GTK_WINDOW(window), icon);
+			g_object_unref(icon);
+			g_object_unref(info);
+		}
 	accel_group = gtk_accel_group_new();
 		gtk_window_add_accel_group(GTK_WINDOW(window), accel_group);
 
-	// Create the header bar
 	GtkWidget *headerbar = gtk_header_bar_new();
 	gtk_header_bar_set_show_close_button(GTK_HEADER_BAR(headerbar), TRUE);
 
-		// Create the button with an icon
 		GtkWidget *button = gtk_menu_button_new();
 		GtkWidget *wicon = gtk_image_new_from_icon_name("accessories-notes", GTK_ICON_SIZE_BUTTON);
 		gtk_container_add(GTK_CONTAINER(button), wicon);
 		gtk_header_bar_pack_start(GTK_HEADER_BAR(headerbar), button);
 
-		// Create the title
 		wintitle = gtk_label_new(NULL);
 		gtk_label_set_markup(GTK_LABEL(wintitle), "<b>Notes - SGNotes</b>");
 		gtk_header_bar_pack_start(GTK_HEADER_BAR(headerbar), wintitle);
 
-		// Create the submenu
 		GtkWidget *submenu = gtk_menu_new();
-			// Create the submenu items
 			submenu_item1 = gtk_menu_item_new_with_label("Create new note");
 			GtkWidget *submenu_item2 = gtk_check_menu_item_new_with_label("Text Wrapping");
 			GtkWidget *submenu_item3 = gtk_menu_item_new_with_label("About");
-				// Add the submenu items to the submenus
 				gtk_menu_shell_append(GTK_MENU_SHELL(submenu), submenu_item1);
 				gtk_menu_shell_append(GTK_MENU_SHELL(submenu), submenu_item2);
 
-		// Create the submenu
 		GtkWidget *submenu_filelist = gtk_menu_new();
-			// Create the submenu items
 			GtkWidget *submenu_filelist_item1 = gtk_menu_item_new_with_label("Create new note");
 			submenu_filelist_item2 = gtk_menu_item_new_with_label("Rename Current Note");
 			submenu_filelist_item3 = gtk_menu_item_new_with_label("Delete Current Note");
-				// Add the submenu items to the submenus
-				//gtk_menu_shell_append(GTK_MENU_SHELL(submenu), submenu_filelist_item1);
 				gtk_menu_shell_append(GTK_MENU_SHELL(submenu), submenu_filelist_item2);
 				gtk_menu_shell_append(GTK_MENU_SHELL(submenu), submenu_filelist_item3);
-		// Create the submenu
 		GtkWidget *submenu_imglist = gtk_menu_new();
-			// Create the submenu items
 			GtkWidget *submenu_imglist_item1 = gtk_menu_item_new_with_label("Open Picture");
 			GtkWidget *submenu_imglist_item2 = gtk_menu_item_new_with_label("Delete Picture");
 			submenu_imglist_item3 = gtk_menu_item_new_with_label("Add Picture to current note");
-				// Add the submenu items to the submenus
 				gtk_menu_shell_append(GTK_MENU_SHELL(submenu_imglist), submenu_imglist_item1);
 				gtk_menu_shell_append(GTK_MENU_SHELL(submenu_imglist), submenu_imglist_item2);
 				gtk_menu_shell_append(GTK_MENU_SHELL(submenu), submenu_imglist_item3);
@@ -100,22 +89,20 @@ g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 					{
 						gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(submenu_item2), TRUE);
 					}
-					gtk_menu_shell_append(GTK_MENU_SHELL(submenu), submenu_item3); //show at the end of the submenu
-		// Show all the submenu items
+					gtk_menu_shell_append(GTK_MENU_SHELL(submenu), submenu_item3);
+
 		gtk_widget_show_all(submenu);
 		gtk_widget_show_all(submenu_filelist);
 		gtk_widget_show_all(submenu_imglist);
 
-		// Connect the button to the submenu
 		gtk_menu_button_set_popup(GTK_MENU_BUTTON(button), submenu);
 
 
 	if (nocsd == 0 )
 	{
-		// Add the header bar to the main window
 		gtk_window_set_titlebar(GTK_WINDOW(window), headerbar);
 	}
-	
+
 	// Create grid
 	grid = gtk_grid_new();
 	gtk_container_add(GTK_CONTAINER(window), grid);
@@ -166,7 +153,6 @@ g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 		gtk_tree_view_column_set_expand(column, TRUE);
 		gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(treeview), FALSE);
 
-
 		textbox_grid = gtk_grid_new();
 			gtk_grid_attach(GTK_GRID(textbox_grid), search_entry, 0, 1, 1, 1);
 			gtk_grid_attach(GTK_GRID(textbox_grid), prev_button, 1, 1, 1, 1);
@@ -177,7 +163,6 @@ g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 		gtk_grid_attach(GTK_GRID(grid), scrolled_txt, 1, 0, 1, 1);
 		gtk_grid_attach(GTK_GRID(grid), textbox_grid, 1, 1, 1, 1);
 		gtk_grid_attach(GTK_GRID(grid), scrolled_treeview, 2, 0, 1, 2);
-		//gtk_grid_attach(GTK_GRID(grid), pic_button, 2, 0, 1, 1);
 
 		gtk_widget_set_vexpand(scrolled_list, TRUE);
 		gtk_widget_set_hexpand(scrolled_list, TRUE);
@@ -209,7 +194,6 @@ g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 	g_signal_connect(G_OBJECT(search_entry), "changed", G_CALLBACK(search_entry_changed), NULL);
 	g_signal_connect(G_OBJECT(next_button), "clicked", G_CALLBACK(next_button_clicked), NULL);
 	g_signal_connect(G_OBJECT(prev_button), "clicked", G_CALLBACK(prev_button_clicked), NULL);
-	//g_signal_connect(list, "button-press-event", G_CALLBACK(on_listbox_clicked), submenu_filelist);
 	load_file_list();
 
 	g_timeout_add(100, timeout_callback, NULL);
