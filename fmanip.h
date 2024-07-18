@@ -15,9 +15,9 @@ void on_save_button_clicked(GtkButton *button, gpointer user_data)
 	if (file)
 	{
 		GtkTextIter start, end;
-		gtk_text_buffer_get_start_iter(buffer, &start);
-		gtk_text_buffer_get_end_iter(buffer, &end);
-		gchar *text = gtk_text_buffer_get_text(buffer, &start, &end, FALSE);
+		gtk_text_buffer_get_start_iter(GTK_TEXT_BUFFER(buffer), &start);
+		gtk_text_buffer_get_end_iter(GTK_TEXT_BUFFER(buffer), &end);
+		gchar *text = gtk_text_buffer_get_text(GTK_TEXT_BUFFER(buffer), &start, &end, FALSE);
 		fprintf(file, "%s", text);
 		fclose(file);
 		g_free(text);

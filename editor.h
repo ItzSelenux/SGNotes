@@ -85,7 +85,7 @@ void load_file_content(const char *filename)
 	FILE *file = fopen(file_path, "r");
 	if (file)
 	{
-		gtk_text_buffer_set_text(buffer, "", -1);
+		gtk_text_buffer_set_text(GTK_TEXT_BUFFER(buffer), "", -1);
 
 		char *line = NULL;
 		size_t len = 0;
@@ -93,7 +93,7 @@ void load_file_content(const char *filename)
 
 		while ((read = getline(&line, &len, file)) != -1)
 		{
-			gtk_text_buffer_insert_at_cursor(buffer, line, read);
+			gtk_text_buffer_insert_at_cursor(GTK_TEXT_BUFFER(buffer), line, read);
 		}
 
 		fclose(file);
