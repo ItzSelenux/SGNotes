@@ -27,7 +27,7 @@ static GtkWidget *submenu_item1, *submenu_filelist_item2,*submenu_filelist_item3
 *grid,*window,*list,*text_view, *textbox_grid,*save_button,*rename_button,*delete_button,*pic_button,
 *scrolled_list,*scrolled_txt;
 
-static char current_folder[1024]="",current_file[1024]="";
+static char current_folder[1024]="Default",current_file[1024]="";
 const char* pver = mver;
 char config_file_path[256],markup_buffer[256];
 
@@ -36,12 +36,6 @@ typedef struct
 	GdkPixbuf *pixbuf;
 	gchar *path;
 }ImageInfo;
-
-void load_file_content(const char *filename);
-void saveToFile(const gchar *text);
-void on_save_button_clicked(GtkButton *button, gpointer user_data);
-static void on_submenu_imglist_item1_selected();
-void add_images_from_directory(GtkWidget *widget, gpointer user_data);
 
 #include "events.h"
 #include "editor.h"

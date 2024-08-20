@@ -26,10 +26,19 @@ gboolean timeout_callback(gpointer user_data)
 void on_submenu_item3_selected(GtkMenuItem *menuitem, gpointer userdata)
 {
 	dialog = gtk_about_dialog_new();
+		theme = gtk_icon_theme_get_default();
+		info = gtk_icon_theme_lookup_icon(theme, "accessories-notes", 48, 0);
+		if (info != NULL)
+		{
+			icon = gtk_icon_info_load_icon(info, NULL);
+			gtk_window_set_icon(GTK_WINDOW(dialog), icon);
+			g_object_unref(icon);
+			g_object_unref(info);
+		}
 	gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), "SGNotes");
 	gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), pver);
 	gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog), "Copyright © 2024 ItzSelenux for Simple GTK Desktop Environment");
-	gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "Simple GTK Launcher");
+	gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), "Simple GTK Notes");
 	gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(dialog), "https://sgde.github.io/sgnotes");
 	gtk_about_dialog_set_website_label(GTK_ABOUT_DIALOG(dialog), "Project WebSite");
 	gtk_about_dialog_set_license_type(GTK_ABOUT_DIALOG(dialog),GTK_LICENSE_GPL_3_0);
@@ -46,15 +55,17 @@ void create_window()
 	gtk_container_set_border_width(GTK_CONTAINER(window), 10);
 	gtk_widget_set_size_request(window, 666, 444);
 	g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
-		theme = gtk_icon_theme_get_default();
-		info = gtk_icon_theme_lookup_icon(theme, "accessories-notes", 48, 0);
-		if (info != NULL)
-		{
-			icon = gtk_icon_info_load_icon(info, NULL);
-			gtk_window_set_icon(GTK_WINDOW(window), icon);
-			g_object_unref(icon);
-			g_object_unref(info);
-		}
+
+	theme = gtk_icon_theme_get_default();
+	info = gtk_icon_theme_lookup_icon(theme, "accessories-notes", 16, 0);
+	if (info != NULL) 
+	{
+		GdkPixbuf *icon = gtk_icon_info_load_icon(info, NULL);
+		gtk_window_set_icon(GTK_WINDOW(window), icon);
+		g_object_unref(icon);
+		g_object_unref(info);
+	}
+
 	accel_group = gtk_accel_group_new();
 		gtk_window_add_accel_group(GTK_WINDOW(window), accel_group);
 
@@ -107,7 +118,7 @@ void create_window()
 		gtk_menu_button_set_popup(GTK_MENU_BUTTON(button), submenu);
 
 
-	if (nocsd == 0 )
+	if (!nocsd)
 	{
 		gtk_window_set_titlebar(GTK_WINDOW(window), headerbar);
 	}
@@ -117,7 +128,7 @@ void create_window()
 	gtk_container_add(GTK_CONTAINER(window), grid);
 	gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
 	gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
-	
+
 	scrolled_list = gtk_scrolled_window_new(NULL, NULL);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_list), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 	scrolled_txt = gtk_scrolled_window_new(NULL, NULL);

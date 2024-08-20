@@ -1,3 +1,4 @@
+void load_file_content(const char *filename);
 gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer data)
 {
 	if ((event->state & GDK_CONTROL_MASK) && (event->keyval == GDK_KEY_f))
@@ -83,6 +84,7 @@ static void on_entry_changed(GtkEditable *editable, gpointer user_data)
 	g_free(cleaned_text);
 }
 
+void add_images_from_directory(GtkWidget *widget, gpointer user_data);
 void on_list_item_selected(GtkListBox *box, GtkListBoxRow *row, gpointer user_data)
 {
 	GtkWidget *label = gtk_bin_get_child(GTK_BIN(row));
@@ -100,6 +102,7 @@ void on_list_item_selected(GtkListBox *box, GtkListBoxRow *row, gpointer user_da
 	add_images_from_directory(GTK_WIDGET(treeview), user_data);
 }
 
+static void on_submenu_imglist_item1_selected();
 gboolean on_treeview_clicked(GtkWidget *treeview, GdkEventButton *event, gpointer data)
 {
 	if (event->button == 3)
