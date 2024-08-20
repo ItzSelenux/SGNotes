@@ -5,7 +5,7 @@ void add_images_from_directory(GtkWidget *widget, gpointer user_data)
 	const char *home = getenv("HOME");
 	const char *notes_dir = "/.local/share/sgnotes/";
 	char dir_path[1024];
-	snprintf(dir_path, sizeof(dir_path), "%s%s%s/%s_files", home, notes_dir, current_folder, current_file);
+	snprintf(dir_path, sizeof(dir_path), "%s%s%s/%s_files", home, notes_dir, current_workspace, current_file);
 
 	GFile *directory = g_file_new_for_path(dir_path);
 
@@ -88,7 +88,7 @@ void add_image(GtkWidget *widget, gpointer user_data)
 			const char *home = getenv("HOME");
 			const char *notes_dir = "/.local/share/sgnotes/";
 			char file_path[1024];
-			snprintf(file_path, sizeof(file_path), "%s%s%s/%s_files", home, notes_dir, current_folder, current_file);
+			snprintf(file_path, sizeof(file_path), "%s%s%s/%s_files", home, notes_dir, current_workspace, current_file);
 
 			g_mkdir_with_parents(file_path, 0755);
 
@@ -131,7 +131,7 @@ const char *home = getenv("HOME");
 		char file_path[1024];
 		file_path[0] = '\0';
 
-		snprintf(file_path, sizeof(file_path), "%s%s%s/%s_files/%d.png", home, notes_dir, current_folder, current_file, selfromtreeview);
+		snprintf(file_path, sizeof(file_path), "%s%s%s/%s_files/%d.png", home, notes_dir, current_workspace, current_file, selfromtreeview);
 
 		char *command = g_strdup_printf("xdg-open \"%s\"", file_path);
 		system(command);
@@ -156,7 +156,7 @@ static void on_submenu_imglist_item2_selected(GtkWidget *widget, gpointer user_d
 	char file_path[1024];
 	file_path[0] = '\0';
 
-	snprintf(file_path, sizeof(file_path), "%s%s%s/%s_files/%d.png", home, notes_dir, current_folder, current_file, selfromtreeview);
+	snprintf(file_path, sizeof(file_path), "%s%s%s/%s_files/%d.png", home, notes_dir, current_workspace, current_file, selfromtreeview);
 
 	if (remove(file_path) == 0)
 	{
@@ -164,7 +164,7 @@ static void on_submenu_imglist_item2_selected(GtkWidget *widget, gpointer user_d
 		DIR *dir;
 		struct dirent *entry;
 		char folder_path[1024];
-		snprintf(folder_path, sizeof(folder_path), "%s%s%s/%s_files", home, notes_dir, current_folder, current_file);
+		snprintf(folder_path, sizeof(folder_path), "%s%s%s/%s_files", home, notes_dir, current_workspace, current_file);
 
 		dir = opendir(folder_path);
 		if (dir != NULL)

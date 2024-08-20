@@ -1,3 +1,5 @@
+void on_submenu_item_workspace_selected();
+
 void on_save_button_clicked(GtkButton *button, gpointer user_data)
 {
 	//Fix saving empty files
@@ -9,7 +11,7 @@ void on_save_button_clicked(GtkButton *button, gpointer user_data)
 	const char *home = getenv("HOME");
 	const char *notes_dir = "/.local/share/sgnotes/";
 	char file_path[1024];
-	snprintf(file_path, sizeof(file_path), "%s%s%s/%s", home, notes_dir, current_folder, current_file);
+	snprintf(file_path, sizeof(file_path), "%s%s%s/%s", home, notes_dir, current_workspace, current_file);
 
 	FILE *file = fopen(file_path, "w");
 	if (file)
@@ -24,12 +26,199 @@ void on_save_button_clicked(GtkButton *button, gpointer user_data)
 	}
 }
 
+void on_create_new_workspace(GtkButton *button, gpointer dialog)
+{
+	GtkWidget *entry, *dialog_new_workspace;
+	GtkWidget *dialog_content;
+	GtkWidget *label;
+
+	dialog_new_workspace = gtk_dialog_new_with_buttons("New Workspace",
+		GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(button))),
+		GTK_DIALOG_MODAL,
+		"_Cancel", GTK_RESPONSE_CANCEL,
+		"_Create", GTK_RESPONSE_ACCEPT,
+		NULL);
+
+	gtk_window_set_position(GTK_WINDOW(dialog_new_workspace), GTK_WIN_POS_CENTER);
+	dialog_content = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog_new_workspace))), dialog_content);
+
+	label = gtk_label_new("Enter the name for the new workspace:");
+	gtk_box_pack_start(GTK_BOX(dialog_content), label, FALSE, FALSE, 5);
+
+	entry = gtk_entry_new();
+	gtk_box_pack_start(GTK_BOX(dialog_content), entry, FALSE, FALSE, 5);
+
+	gtk_widget_show_all(dialog_new_workspace);
+
+	gint result = gtk_dialog_run(GTK_DIALOG(dialog_new_workspace));
+
+	if (result == GTK_RESPONSE_ACCEPT)
+	{
+		const gchar *workspace_name = gtk_entry_get_text(GTK_ENTRY(entry));
+
+		snprintf(workspaces_path, sizeof(workspaces_path), "%s%s", home_dir, notes_dir);
+
+		char new_workspace_path[1024];
+		snprintf(new_workspace_path, sizeof(new_workspace_path), "%s%s", workspaces_path, workspace_name);
+
+		if (access(new_workspace_path, F_OK) == 0)
+		{
+			GtkWidget *error_dialog = gtk_message_dialog_new
+			(
+				GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(button))),
+				GTK_DIALOG_MODAL,
+				GTK_MESSAGE_ERROR,
+				GTK_BUTTONS_OK,
+				"A workspace with the name '%s' already exists at '%s'.",
+				workspace_name,
+				new_workspace_path
+			);
+			gtk_window_set_position(GTK_WINDOW(error_dialog), GTK_WIN_POS_CENTER);
+
+			gtk_dialog_run(GTK_DIALOG(error_dialog));
+			gtk_widget_destroy(error_dialog);
+
+			gtk_widget_destroy(dialog_new_workspace);
+
+			on_create_new_workspace(button, NULL);
+		}
+		else
+		{
+			if (mkdir(new_workspace_path, 0700) == -1)
+			{
+				perror("Error creating directory");
+			}
+			else
+			{
+				printf("Workspace '%s' created at '%s'\n", workspace_name, new_workspace_path);
+				strncpy(current_workspace, workspace_name, sizeof(current_workspace) - 1);
+				gtk_widget_destroy(dialog_new_workspace);
+				gtk_widget_destroy(workspaces_dialog);
+				restart_program();
+			}
+		}
+	}
+	else
+	{
+		gtk_widget_destroy(dialog_new_workspace);
+	}
+}
+
+void on_workspace_menu_item_activate(GtkMenuItem *menuitem, gpointer user_data)
+{
+	if (clicked_workspace != NULL)
+	{
+		char objetive[1024];
+		snprintf(objetive, sizeof(objetive), "%s%s%s", home_dir, notes_dir, clicked_workspace);
+		printf("Workspace selected: %s\n", objetive);
+
+		GtkWidget *dialog = gtk_message_dialog_new
+		(
+			GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(menuitem))),
+			GTK_DIALOG_MODAL,
+			GTK_MESSAGE_QUESTION,
+			GTK_BUTTONS_YES_NO,
+			"Are you sure you want to remove '%s' ?",
+			clicked_workspace
+		);
+gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
+
+		gint result = gtk_dialog_run(GTK_DIALOG(dialog));
+		gtk_widget_destroy(dialog);
+
+		if (result == GTK_RESPONSE_YES)
+		{
+			if (rmdir(objetive) == 0)
+			{
+				printf("Directory %s removed successfully.\n", objetive);
+				gtk_widget_destroy(workspaces_dialog);
+				on_submenu_item_workspace_selected();
+			}
+			else
+			{
+				GtkWidget *error_dialog = gtk_message_dialog_new(
+					GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(menuitem))),
+					GTK_DIALOG_MODAL,
+					GTK_MESSAGE_ERROR,
+					GTK_BUTTONS_OK,
+					"Failed to remove directory '%s': %s",
+					objetive, strerror(errno)
+				);
+				gtk_dialog_run(GTK_DIALOG(error_dialog));
+				gtk_widget_destroy(error_dialog);
+			}
+		}
+	}
+}
+
+void on_submenu_item_workspace_selected()
+{
+	DIR *dir;
+	struct dirent *entry;
+
+	GtkWidget *dialog, *content_area, *tree_view, *scrolled_window;
+	GtkListStore *list_store;
+	GtkTreeIter iter;
+
+	workspaces_dialog = gtk_dialog_new_with_buttons("Select Workspace",
+		NULL,
+		GTK_DIALOG_MODAL,
+		"_Cancel",
+		GTK_RESPONSE_CANCEL,
+		"_Create New Workspace",
+		GTK_RESPONSE_ACCEPT,
+		NULL);
+
+	gtk_window_set_position(GTK_WINDOW(workspaces_dialog), GTK_WIN_POS_CENTER);
+	gtk_widget_set_size_request(workspaces_dialog, 333, 333);
+
+	content_area = gtk_dialog_get_content_area(GTK_DIALOG(workspaces_dialog));
+
+	list_store = gtk_list_store_new(1, G_TYPE_STRING);
+
+	if ((dir = opendir(workspaces_path)) != NULL)
+	{
+		while ((entry = readdir(dir)) != NULL)
+		{
+			if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0)
+			{
+				gtk_list_store_append(list_store, &iter);
+				gtk_list_store_set(list_store, &iter, 0, entry->d_name, -1);
+			}
+		}
+		closedir(dir);
+	}
+
+	tree_view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(list_store));
+	g_object_unref(list_store);
+
+	GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes("Workspaces", gtk_cell_renderer_text_new(), "text", 0, NULL);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(tree_view), column);
+
+	g_signal_connect(tree_view, "row-activated", G_CALLBACK(on_workspace_row_activated), workspaces_dialog);
+
+	g_signal_connect(tree_view, "button-press-event", G_CALLBACK(on_workspace_button_press), NULL);
+
+	scrolled_window = gtk_scrolled_window_new(NULL, NULL);
+	gtk_container_add(GTK_CONTAINER(scrolled_window), tree_view);
+	gtk_widget_set_vexpand(scrolled_window, TRUE);
+	gtk_widget_set_hexpand(scrolled_window, TRUE);
+	gtk_container_add(GTK_CONTAINER(content_area), scrolled_window);
+
+	gtk_widget_show_all(workspaces_dialog);
+
+	if (gtk_dialog_run(GTK_DIALOG(workspaces_dialog)) == GTK_RESPONSE_ACCEPT)
+	{
+		on_create_new_workspace(NULL, workspaces_dialog);
+	}
+
+	gtk_widget_destroy(workspaces_dialog);
+}
+
 void load_file_list()
 {
-	const char *home = getenv("HOME");
-	const char *notes_dir = "/.local/share/sgnotes/";
-	char notes_path[1024];
-	snprintf(notes_path, sizeof(notes_path), "%s%s%s", home, notes_dir, current_folder);
+	snprintf(notes_path, sizeof(notes_path), "%s%s%s", home_dir, notes_dir, current_workspace);
 
 	DIR *dir;
 	struct dirent *entry;
@@ -38,7 +227,7 @@ void load_file_list()
 	{
 		while ((entry = readdir(dir)) != NULL)
 		{
-			if (entry->d_type == DT_REG) // Disable showing directories
+			if (entry->d_type == DT_REG)
 			{
 				GtkWidget *label = gtk_label_new(entry->d_name);
 				gtk_label_set_xalign(GTK_LABEL(label), 0.0);
@@ -107,8 +296,8 @@ void delete_current_file()
 	const char *notes_dir = "/.local/share/sgnotes/";
 	char file_path[1024];
 	char data_path[1024];
-	snprintf(file_path, sizeof(file_path), "%s%s%s/%s", home, notes_dir, current_folder, current_file);
-	snprintf(data_path, sizeof(data_path), "%s%s%s/%s_files", home, notes_dir, current_folder, current_file);
+	snprintf(file_path, sizeof(file_path), "%s%s%s/%s", home, notes_dir, current_workspace, current_file);
+	snprintf(data_path, sizeof(data_path), "%s%s%s/%s_files", home, notes_dir, current_workspace, current_file);
 
 
 	if (remove(file_path) == 0)
@@ -150,6 +339,7 @@ void on_delete_button_clicked(GtkButton *button, gpointer user_data)
 	}
 
 	dialog = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO, "Are you sure you want to delete this note: '%s'?", current_file);
+	gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
 	gtk_window_set_title(GTK_WINDOW(dialog), "WARNING");
 	gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
 	gint response = gtk_dialog_run(GTK_DIALOG(dialog));
@@ -169,7 +359,7 @@ static void save_file(const gchar *filename)
 
 	const char *home_dir = g_get_home_dir();
 
-	gchar *dir_path = g_build_filename(home_dir, ".local", "share", "sgnotes", current_folder, NULL);
+	gchar *dir_path = g_build_filename(home_dir, ".local", "share", "sgnotes", current_workspace, NULL);
 	if (!g_file_test(dir_path, G_FILE_TEST_EXISTS))
 		g_mkdir_with_parents(dir_path, 0700);
 
@@ -195,7 +385,7 @@ void saveToFile(const gchar *text)
 
 	const char *home_dir = g_get_home_dir();
 
-	gchar *dir_path = g_build_filename(home_dir, ".local", "share", "sgnotes", current_folder, NULL);
+	gchar *dir_path = g_build_filename(home_dir, ".local", "share", "sgnotes", current_workspace, NULL);
 	if (!g_file_test(dir_path, G_FILE_TEST_EXISTS))
 		g_mkdir_with_parents(dir_path, 0700);
 
@@ -290,7 +480,7 @@ static void on_rename_button_clicked(GtkButton *button, gpointer user_data)
 		text = gtk_entry_get_text(GTK_ENTRY(entry));
 		const char *home_dir = g_get_home_dir();
 
-		gchar *dir_path = g_build_filename(home_dir, ".local", "share", "sgnotes", current_folder, NULL);
+		gchar *dir_path = g_build_filename(home_dir, ".local", "share", "sgnotes", current_workspace, NULL);
 		if (!g_file_test(dir_path, G_FILE_TEST_EXISTS))
 			g_mkdir_with_parents(dir_path, 0700);
 		output = g_build_filename(dir_path, text, NULL);

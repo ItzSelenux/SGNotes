@@ -50,7 +50,7 @@ void on_submenu_item3_selected(GtkMenuItem *menuitem, gpointer userdata)
 void create_window()
 {
 	store = gtk_list_store_new(1, GDK_TYPE_PIXBUF);
-	GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(window), "SGNotes");
 	gtk_container_set_border_width(GTK_CONTAINER(window), 10);
 	gtk_widget_set_size_request(window, 666, 444);
@@ -82,11 +82,14 @@ void create_window()
 		gtk_header_bar_pack_start(GTK_HEADER_BAR(headerbar), wintitle);
 
 		GtkWidget *submenu = gtk_menu_new();
+			submenu_item_workspace = gtk_menu_item_new_with_label("Switch workspace");
 			submenu_item1 = gtk_menu_item_new_with_label("Create new note");
 			GtkWidget *submenu_item2 = gtk_check_menu_item_new_with_label("Text Wrapping");
 			GtkWidget *submenu_item3 = gtk_menu_item_new_with_label("About");
+				gtk_menu_shell_append(GTK_MENU_SHELL(submenu), submenu_item_workspace);
 				gtk_menu_shell_append(GTK_MENU_SHELL(submenu), submenu_item1);
 				gtk_menu_shell_append(GTK_MENU_SHELL(submenu), submenu_item2);
+				gtk_menu_shell_append(GTK_MENU_SHELL(submenu), submenu_item3);
 
 		GtkWidget *submenu_filelist = gtk_menu_new();
 			GtkWidget *submenu_filelist_item1 = gtk_menu_item_new_with_label("Create new note");
@@ -109,7 +112,6 @@ void create_window()
 					{
 						gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(submenu_item2), TRUE);
 					}
-					gtk_menu_shell_append(GTK_MENU_SHELL(submenu), submenu_item3);
 
 		gtk_widget_show_all(submenu);
 		gtk_widget_show_all(submenu_filelist);
@@ -195,6 +197,7 @@ void create_window()
 		g_signal_connect(delete_button, "clicked", G_CALLBACK(on_delete_button_clicked), NULL);
 		g_signal_connect(pic_button, "clicked", G_CALLBACK(add_image), NULL);
 
+		g_signal_connect(submenu_item_workspace, "activate", G_CALLBACK(on_submenu_item_workspace_selected), NULL);
 		g_signal_connect(submenu_item1, "activate", G_CALLBACK(on_submenu_item1_selected), NULL);
 		g_signal_connect(submenu_item2, "activate", G_CALLBACK(on_submenu_item2_selected), NULL);
 		g_signal_connect(submenu_item3, "activate", G_CALLBACK(on_submenu_item3_selected), NULL);
@@ -225,4 +228,12 @@ void create_window()
 	gtk_widget_hide(treeview);
 	gtk_widget_hide(scrolled_treeview);
 	gtk_main();
+}
+
+void restart_program()
+{
+	current_file[0] = '\0';
+	gtk_widget_destroy(window);
+	readconf();
+	create_window();
 }

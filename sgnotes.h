@@ -20,15 +20,20 @@ GtkTextMark *last_found = NULL;
 static GtkTextBuffer *buffer;
 
 int wraptext,fix,showfind=0,nocsd = 0,selfromtreeview,selfromlistbox;
-char *pm, *home_dir;
+char *pm, *home_dir, *notes_dir;
 GtkWidget *dialog,*scrolled_treeview,*treeview,*wintitle,*search_entry,*next_button,*prev_button;
 
-static GtkWidget *submenu_item1, *submenu_filelist_item2,*submenu_filelist_item3,*submenu_imglist_item3,
-*grid,*window,*list,*text_view, *textbox_grid,*save_button,*rename_button,*delete_button,*pic_button,
-*scrolled_list,*scrolled_txt;
+static GtkWidget *window, *workspaces_dialog, *submenu_item_workspace, *submenu_item1, *submenu_filelist_item2,
+*submenu_filelist_item3,*submenu_imglist_item3,*grid,*window,*list,*text_view, *textbox_grid,
+*save_button,*rename_button,*delete_button,*pic_button,*scrolled_list,*scrolled_txt;
 
-static char current_folder[1024]="Default",current_file[1024]="";
+static char current_workspace[1024]="Default",current_file[1024]="";
 const char* pver = mver;
+
+gchar *clicked_workspace = NULL;
+
+char workspaces_path[1024];
+char notes_path[1024];
 char config_file_path[256],markup_buffer[256];
 
 typedef struct

@@ -81,7 +81,7 @@ void load_file_content(const char *filename)
 	const char *home = getenv("HOME");
 	const char *notes_dir = "/.local/share/sgnotes/";
 	char file_path[1024];
-	snprintf(file_path, sizeof(file_path), "%s%s%s/%s", home, notes_dir, current_folder, filename);
+	snprintf(file_path, sizeof(file_path), "%s%s%s/%s", home, notes_dir, current_workspace, filename);
 	FILE *file = fopen(file_path, "r");
 	if (file)
 	{

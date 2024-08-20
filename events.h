@@ -1,4 +1,82 @@
 void load_file_content(const char *filename);
+void restart_program();
+static void on_submenu_imglist_item1_selected();
+void on_workspace_menu_item_activate(GtkMenuItem *menuitem, gpointer user_data);
+void add_images_from_directory(GtkWidget *widget, gpointer user_data);
+
+void on_dialog_destroy(GtkWidget *widget, gpointer user_data)
+{
+	if (clicked_workspace != NULL)
+	{
+		g_free(clicked_workspace);
+		clicked_workspace = NULL;
+	}
+}
+
+static gboolean on_workspace_button_press(GtkWidget *widget, GdkEventButton *event, gpointer user_data)
+{
+	if (event->type == GDK_BUTTON_PRESS && event->button == 3)
+	{
+		GtkTreeView *tree_view = GTK_TREE_VIEW(widget);
+		GtkTreePath *path;
+		GtkTreeSelection *selection;
+		GtkTreeModel *model;
+		GtkTreeIter iter;
+
+		if (gtk_tree_view_get_path_at_pos(tree_view, (gint)event->x, (gint)event->y, &path, NULL, NULL, NULL))
+		{
+			selection = gtk_tree_view_get_selection(tree_view);
+			gtk_tree_selection_select_path(selection, path);
+			gtk_tree_view_set_cursor(tree_view, path, NULL, FALSE);
+
+			model = gtk_tree_view_get_model(tree_view);
+
+			if (gtk_tree_model_get_iter(model, &iter, path))
+			{
+				if (clicked_workspace != NULL)
+				{
+					g_free(clicked_workspace);
+				}
+				gtk_tree_model_get(model, &iter, 0, &clicked_workspace, -1);
+			}
+
+			gtk_tree_path_free(path);
+
+			GtkWidget *menu = gtk_menu_new();
+			GtkWidget *menu_item = gtk_menu_item_new_with_label("Delete Workspace");
+			gtk_menu_shell_append(GTK_MENU_SHELL(menu), menu_item);
+			gtk_widget_show_all(menu);
+
+			g_signal_connect(menu_item, "activate", G_CALLBACK(on_workspace_menu_item_activate), NULL);
+
+			gtk_menu_popup_at_pointer(GTK_MENU(menu), (GdkEvent*)event);
+
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+void on_workspace_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer dialog)
+{
+	GtkTreeModel *model;
+	GtkTreeIter iter;
+	gchar *selected_workspace;
+
+	model = gtk_tree_view_get_model(tree_view);
+
+	if (gtk_tree_model_get_iter(model, &iter, path))
+	{
+		gtk_tree_model_get(model, &iter, 0, &selected_workspace, -1);
+		printf("Selected Workspace: %s\n", selected_workspace);
+		strncpy(current_workspace, selected_workspace, sizeof(current_workspace) - 1);
+		g_free(selected_workspace);
+
+		gtk_widget_destroy(dialog);
+		restart_program();
+	}
+}
+
 gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer data)
 {
 	if ((event->state & GDK_CONTROL_MASK) && (event->keyval == GDK_KEY_f))
@@ -84,7 +162,6 @@ static void on_entry_changed(GtkEditable *editable, gpointer user_data)
 	g_free(cleaned_text);
 }
 
-void add_images_from_directory(GtkWidget *widget, gpointer user_data);
 void on_list_item_selected(GtkListBox *box, GtkListBoxRow *row, gpointer user_data)
 {
 	GtkWidget *label = gtk_bin_get_child(GTK_BIN(row));
@@ -102,7 +179,6 @@ void on_list_item_selected(GtkListBox *box, GtkListBoxRow *row, gpointer user_da
 	add_images_from_directory(GTK_WIDGET(treeview), user_data);
 }
 
-static void on_submenu_imglist_item1_selected();
 gboolean on_treeview_clicked(GtkWidget *treeview, GdkEventButton *event, gpointer data)
 {
 	if (event->button == 3)
@@ -167,4 +243,3 @@ gboolean on_listbox_clicked(GtkWidget *listbox, GdkEventButton *event, gpointer 
 	}
 	return TRUE;
 }
-
