@@ -19,7 +19,7 @@ GtkListStore *store; //img store
 GtkTextMark *last_found = NULL;
 static GtkTextBuffer *buffer;
 
-int wraptext,fix,showfind=0,nocsd = 0,selfromtreeview,selfromlistbox;
+int wraptext,fix,showfind=0,nocsd = 0,selfromtreeview,selfromlistbox, fontsize=12;
 char *pm, *home_dir, *notes_dir;
 GtkWidget *dialog,*scrolled_treeview,*treeview,*wintitle,*search_entry,*next_button,*prev_button;
 

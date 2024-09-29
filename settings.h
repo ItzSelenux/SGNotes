@@ -2,54 +2,59 @@ void readconf()
 {
 	if (home_dir == NULL)
 	{
-		fprintf(stderr, "Error: HOME environment variable is not set.\n");
-		exit(1);
-	}
-
-	snprintf(config_file_path, sizeof(config_file_path), "%s/.config/sgnotes.conf", home_dir);
-
-	FILE *file = fopen(config_file_path, "r");
-
-	if (file == NULL)
-	{
-		file = fopen(config_file_path, "w");
-		if (file = NULL)
-		{
-			fprintf(file, "wraptext=%d\n", 1);
-			wraptext = 1;
-			fclose(file);
-		}
-		else
-		{
-			fprintf(stderr, "Error: Failed to open file.\n");
-			exit(1);
-		}
+		g_warning("Error: HOME environment variable is not set.");
 		return;
 	}
-
-	char line[ML];
-	while (fgets(line, sizeof(line), file) != NULL)
+	else
 	{
-		char *name = strtok(line, "=");
-		char *value_str = strtok(NULL, "=");
+		snprintf(config_file_path, sizeof(config_file_path), "%s/.config/sgnotes.conf", home_dir);
 
-		if (name != NULL && value_str != NULL)
+		FILE *file = fopen(config_file_path, "r");
+
+		if (file == NULL)
 		{
-			// Set the value of the corresponding variable based on the name
-			if (strcmp(name, "wraptext") == 0)
+			file = fopen(config_file_path, "w");
+			if (file = NULL)
 			{
-				wraptext = atoi(value_str);
+				fprintf(file, "wraptext=%d\n", 1);
+				wraptext = 1;
+				fclose(file);
 			}
-			else if (strcmp(name, "fix") == 0)
+			else
 			{
-				fix = atoi(value_str);
+				fprintf(stderr, "Error: Failed to open file.\n");
+				exit(1);
+			}
+			return;
+		}
+
+		char line[ML];
+		while (fgets(line, sizeof(line), file) != NULL)
+		{
+			char *name = strtok(line, "=");
+			char *value_str = strtok(NULL, "=");
+
+			if (name != NULL && value_str != NULL)
+			{
+				// Set the value of the corresponding variable based on the name
+				if (strcmp(name, "wraptext") == 0)
+				{
+					wraptext = atoi(value_str);
+				}
+				else if (strcmp(name, "fix") == 0)
+				{
+					fix = atoi(value_str);
+				}
+				else if (strcmp(name, "fontsize") == 0)
+				{
+					fontsize = atoi(value_str);
+					fontsize = (fontsize > 100 || fontsize < 1) ? 12 : fontsize;
+				}
 			}
 		}
+		fclose(file);
 	}
-
-	fclose(file);
-	printf("WrapText: %d\n", wraptext);
-	printf("Fix: %d\n", fix);
+	g_print("WrapText: %d\nFix: %d\nFontSize: %d\n", wraptext, fix, fontsize);
 }
 
 static void on_submenu_item2_selected(GtkWidget *widget, gpointer data)

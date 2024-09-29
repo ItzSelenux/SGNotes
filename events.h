@@ -77,6 +77,23 @@ void on_workspace_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTr
 	}
 }
 
+void adjust_font_size(GtkSourceView *text_view, int adjustment)
+{
+	fontsize = (fontsize > 100 || fontsize < 1) ? 12 : fontsize;
+
+	fontsize += adjustment;
+
+	GtkCssProvider *provider = gtk_css_provider_new();
+	gchar *css = g_strdup_printf("textview { font-size: %dpt; }", fontsize);
+	gtk_css_provider_load_from_data(provider, css, -1, NULL);
+	g_free(css);
+
+	GtkStyleContext *context = gtk_widget_get_style_context(GTK_WIDGET(text_view));
+	gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+
+	g_object_unref(provider);
+}
+
 gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer data)
 {
 	if ((event->state & GDK_CONTROL_MASK) && (event->keyval == GDK_KEY_f))
@@ -120,8 +137,37 @@ gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer data)
 		gtk_widget_set_hexpand(scrolled_list, TRUE);
 		gtk_label_set_markup(GTK_LABEL(wintitle), "<b>Notes - SGNotes</b>");
 	}
+	else if (event->keyval == GDK_KEY_plus && (event->state & GDK_CONTROL_MASK))
+	{
+		adjust_font_size(GTK_SOURCE_VIEW(text_view), 2);
+		return TRUE;
+	}
+	else if (event->keyval == GDK_KEY_minus && (event->state & GDK_CONTROL_MASK))
+	{
+		adjust_font_size(GTK_SOURCE_VIEW(text_view), -2);
+		return TRUE;
+	}
 	return FALSE;
 }
+
+gboolean on_scroll_event(GtkWidget *widget, GdkEventScroll *event, gpointer user_data)
+{
+	if (event->state & GDK_CONTROL_MASK)
+	{
+		if (event->direction == GDK_SCROLL_UP)
+		{
+			adjust_font_size(GTK_SOURCE_VIEW(text_view), 2);
+			return TRUE;
+		}
+		else if (event->direction == GDK_SCROLL_DOWN)
+		{
+			adjust_font_size(GTK_SOURCE_VIEW(text_view), -2);
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 gboolean on_button_press(GtkWidget *widget, GdkEventButton *event, gpointer data)
 {
 	if (event->type == GDK_BUTTON_PRESS && event->button == 3)

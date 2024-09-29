@@ -211,6 +211,7 @@ void create_window()
 
 	gtk_widget_add_accelerator(submenu_item1, "activate", accel_group, GDK_KEY_N, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
 	g_signal_connect(window, "button-press-event", G_CALLBACK(on_button_press), submenu);
+	g_signal_connect(G_OBJECT(window), "scroll-event", G_CALLBACK(on_scroll_event), text_view);
 	g_signal_connect(window, "key-press-event", G_CALLBACK(on_key_press), submenu);
 	g_signal_connect(list, "button-press-event", G_CALLBACK(on_list_press), NULL);
 	g_signal_connect(treeview, "button-press-event", G_CALLBACK(on_treeview_clicked), submenu_imglist);
