@@ -78,10 +78,8 @@ void prev_button_clicked(GtkWidget *prev_button)
 
 void load_file_content(const char *filename)
 {
-	const char *home = getenv("HOME");
-	const char *notes_dir = "/.local/share/sgnotes/";
-	char file_path[1024];
-	snprintf(file_path, sizeof(file_path), "%s%s%s/%s", home, notes_dir, current_workspace, filename);
+	gchar file_path[1024];
+	snprintf(file_path, sizeof(file_path), "%s%s%s/%s", home_dir, notes_dir, current_workspace, filename);
 	FILE *file = fopen(file_path, "r");
 	if (file)
 	{

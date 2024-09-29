@@ -19,22 +19,19 @@ GtkListStore *store; //img store
 GtkTextMark *last_found = NULL;
 static GtkTextBuffer *buffer;
 
-int wraptext,fix,showfind=0,nocsd = 0,selfromtreeview,selfromlistbox, fontsize=12;
-char *pm, *home_dir, *notes_dir;
+gint wraptext,fix,showfind=0,nocsd = 0,selfromtreeview,selfromlistbox, fontsize=12, nohome=0;
+gchar *pm, *home_dir, *notes_dir;
 GtkWidget *dialog,*scrolled_treeview,*treeview,*wintitle,*search_entry,*next_button,*prev_button;
 
-static GtkWidget *window, *workspaces_dialog, *submenu_item_workspace, *submenu_item1, *submenu_filelist_item2,
+GtkWidget *window, *workspaces_dialog, *submenu_item_workspace, *submenu_item1, *submenu_filelist_item2,
 *submenu_filelist_item3,*submenu_imglist_item3,*grid,*window,*list,*text_view, *textbox_grid,
 *save_button,*rename_button,*delete_button,*pic_button,*scrolled_list,*scrolled_txt;
 
-static char current_workspace[1024]="Default",current_file[1024]="";
-const char* pver = mver;
+gchar current_workspace[1024]="Default",current_file[1024]="";
+const gchar* pver = mver;
 
 gchar *clicked_workspace = NULL;
-
-char workspaces_path[1024];
-char notes_path[1024];
-char config_file_path[256],markup_buffer[256];
+gchar config_file_path[256],markup_buffer[256], notes_path[1024], workspaces_path[1024];
 
 typedef struct
 {

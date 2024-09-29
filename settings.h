@@ -2,7 +2,8 @@ void readconf()
 {
 	if (home_dir == NULL)
 	{
-		g_warning("Error: HOME environment variable is not set.");
+		g_error("HOME environment variable is not set.");
+		nohome = 1;
 		return;
 	}
 	else
@@ -13,18 +14,6 @@ void readconf()
 
 		if (file == NULL)
 		{
-			file = fopen(config_file_path, "w");
-			if (file = NULL)
-			{
-				fprintf(file, "wraptext=%d\n", 1);
-				wraptext = 1;
-				fclose(file);
-			}
-			else
-			{
-				fprintf(stderr, "Error: Failed to open file.\n");
-				exit(1);
-			}
 			return;
 		}
 
@@ -62,14 +51,18 @@ static void on_submenu_item2_selected(GtkWidget *widget, gpointer data)
 	wraptext = (wraptext == 0) ? 1 : 0;
 	gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(text_view), (wraptext == 0) ? GTK_WRAP_NONE : GTK_WRAP_WORD_CHAR);
 
-	FILE *config_file = fopen(config_file_path, "w");
-	if (config_file != NULL)
+	if (!nohome)
 	{
-		fprintf(config_file, "wraptext=%d\n", wraptext);
-		fclose(config_file);
-	}
-	else
-	{
-		fprintf(stderr, "Error: Failed to open file.\n");
+		FILE *config_file = fopen(config_file_path, "w");
+		if (config_file != NULL)
+		{
+			fprintf(config_file, "wraptext=%d\n", wraptext);
+			fprintf(config_file, "fontsize=%d\n", fontsize);
+			fclose(config_file);
+		}
+		else
+		{
+			g_warning("Failed to open file.");
+		}
 	}
 }

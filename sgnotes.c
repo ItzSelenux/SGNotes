@@ -2,7 +2,7 @@
 
 int main(int argc, char *argv[])
 {
-	const char* env_sgcsd = getenv("SGCSD");
+	const gchar* env_sgcsd = getenv("SGCSD");
 	home_dir = getenv("HOME");
 	notes_dir = "/.local/share/sgnotes/";
 	snprintf(workspaces_path, sizeof(workspaces_path), "%s%s", home_dir, notes_dir);
@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
 		if (strcmp(argv[i], "--nocsd") == 0)
 		{
 			nocsd = 1;
-			printf("CSD Disabled, using fallback display\n");
+			g_print("CSD Disabled, using fallback display");
 		}
 		else if (strcmp(argv[i], "--") != 0)
 		{
@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 			current_workspace[sizeof(current_workspace) - 1] = '\0';
 		}
 	}
-	printf("current_workspace: %s\n", current_workspace);
+	g_print("current_workspace: %s\n", current_workspace);
 
 	readconf();
 	gtk_init(&argc, &argv);

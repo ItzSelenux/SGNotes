@@ -8,10 +8,8 @@ void on_save_button_clicked(GtkButton *button, gpointer user_data)
 		return;
 	}
 
-	const char *home = getenv("HOME");
-	const char *notes_dir = "/.local/share/sgnotes/";
 	char file_path[1024];
-	snprintf(file_path, sizeof(file_path), "%s%s%s/%s", home, notes_dir, current_workspace, current_file);
+	snprintf(file_path, sizeof(file_path), "%s%s%s/%s", home_dir, notes_dir, current_workspace, current_file);
 
 	FILE *file = fopen(file_path, "w");
 	if (file)
@@ -91,7 +89,7 @@ void on_create_new_workspace(GtkButton *button, gpointer dialog)
 			}
 			else
 			{
-				printf("Workspace '%s' created at '%s'\n", workspace_name, new_workspace_path);
+				g_print("Workspace '%s' created at '%s'\n", workspace_name, new_workspace_path);
 				strncpy(current_workspace, workspace_name, sizeof(current_workspace) - 1);
 				gtk_widget_destroy(dialog_new_workspace);
 				gtk_widget_destroy(workspaces_dialog);
@@ -131,7 +129,7 @@ gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
 		{
 			if (rmdir(objetive) == 0)
 			{
-				printf("Directory %s removed successfully.\n", objetive);
+				g_print("Directory %s removed successfully.\n", objetive);
 				gtk_widget_destroy(workspaces_dialog);
 				on_submenu_item_workspace_selected();
 			}
@@ -292,12 +290,10 @@ void delete_current_file()
 		return;
 	}
 
-	const char *home = getenv("HOME");
-	const char *notes_dir = "/.local/share/sgnotes/";
 	char file_path[1024];
 	char data_path[1024];
-	snprintf(file_path, sizeof(file_path), "%s%s%s/%s", home, notes_dir, current_workspace, current_file);
-	snprintf(data_path, sizeof(data_path), "%s%s%s/%s_files", home, notes_dir, current_workspace, current_file);
+	snprintf(file_path, sizeof(file_path), "%s%s%s/%s", home_dir, notes_dir, current_workspace, current_file);
+	snprintf(data_path, sizeof(data_path), "%s%s%s/%s_files", home_dir, notes_dir, current_workspace, current_file);
 
 
 	if (remove(file_path) == 0)
@@ -322,7 +318,7 @@ void delete_current_file()
 	}
 	if (remove_recursive(data_path) == 0)
 	{
-	printf("Directory removed: %s", data_path);
+	g_print("Directory removed: %s", data_path);
 	}
 	else
 	{
@@ -522,7 +518,7 @@ static void on_rename_button_clicked(GtkButton *button, gpointer user_data)
 		strcpy(current_file, text);
 		if (rename(input, output) == 0)
 		{
-			printf("File moved successfully: %s > %s\n", input, output);
+			g_print("File moved successfully: %s > %s\n", input, output);
 				GtkListBoxRow *selected_row = gtk_list_box_get_selected_row(GTK_LIST_BOX(list));
 		if (selected_row != NULL)
 		{
@@ -534,16 +530,16 @@ static void on_rename_button_clicked(GtkButton *button, gpointer user_data)
 		}
 		else
 		{
-			perror("Error moving file");
+			g_warning("Error moving file");
 		}
 }
 		if (rename(imginput, imgoutput) == 0)
 		{
-			printf("File moved successfully: %s > %s\n", imginput, imgoutput);
+			g_print("File moved successfully: %s > %s\n", imginput, imgoutput);
 		}
 		else
 		{
-			perror("Error moving file");
+			g_warning("Error moving file");
 		}
 
 

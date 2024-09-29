@@ -68,7 +68,7 @@ void on_workspace_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTr
 	if (gtk_tree_model_get_iter(model, &iter, path))
 	{
 		gtk_tree_model_get(model, &iter, 0, &selected_workspace, -1);
-		printf("Selected Workspace: %s\n", selected_workspace);
+		g_print("Selected Workspace: %s\n", selected_workspace);
 		strncpy(current_workspace, selected_workspace, sizeof(current_workspace) - 1);
 		g_free(selected_workspace);
 
