@@ -18,11 +18,11 @@ void on_submenu_item_about_selected(GtkMenuItem *menuitem, gpointer userdata)
 	gtk_widget_destroy(dialog);
 }
 
-void help_handler()
+void help_handler(void)
 {
 	const gchar *link = "https://codeberg.org/ItsZariep/SGNotes/wiki/?action=_pages";
 
-	dialog = gtk_dialog_new_with_buttons("Documentation available on Codeberg", NULL, GTK_DIALOG_MODAL, NULL);
+	dialog = gtk_dialog_new_with_buttons("Documentation available on Codeberg", NULL, GTK_DIALOG_MODAL, NULL, NULL);
 	GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
 	GtkWidget *info_image = gtk_image_new_from_icon_name("dialog-information", GTK_ICON_SIZE_DIALOG);
 	GtkWidget *label = gtk_label_new("Documentation available at:");
@@ -45,7 +45,7 @@ void help_handler()
 	gtk_widget_destroy(dialog);
 }
 
-void create_window()
+void create_window(void)
 {
 	program_icon_names = g_ptr_array_new();
 	g_ptr_array_add(program_icon_names, "sgnotes");
@@ -76,14 +76,14 @@ void create_window()
 	GtkWidget *mainvbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 
 	GtkWidget *submenu = gtk_menu_new();
-	GtkWidget *submenu_item_workspace = gtk_menu_item_new_with_label("Switch workspace");
+	submenu_item_workspace = gtk_menu_item_new_with_label("Switch workspace");
 
 	GtkWidget *submenu_item_settings = gtk_menu_item_new_with_label("Preferences");
 	GtkWidget *submenu_item_about = gtk_menu_item_new_with_label("About");
 	GtkWidget *submenu_item_onlinehelp = gtk_menu_item_new_with_label("Online Help");
 
 	GtkWidget *submenu_filelist = gtk_menu_new();
-	GtkWidget *submenu_item_newnote = gtk_menu_item_new_with_label("Create new note");
+	submenu_item_newnote = gtk_menu_item_new_with_label("Create new note");
 	submenu_item_save = gtk_menu_item_new_with_label("Save changes");
 	submenu_filelist_item2 = gtk_menu_item_new_with_label("Rename Current Note");
 	submenu_filelist_item3 = gtk_menu_item_new_with_label("Delete Current Note");
@@ -252,9 +252,6 @@ void create_window()
 
 		if (resizablewidgets)
 		{
-			paned_horiz1;
-			paned_horiz2;
-
 			paned_horiz1 = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
 				gtk_paned_pack1(GTK_PANED(paned_horiz1), scrolled_list, TRUE, FALSE);
 			paned_horiz2 = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
@@ -329,7 +326,6 @@ void create_window()
 
 	if (autosave)
 	{
-		guint interval;
 		if (autosaverate == 0)
 		{
 			timeout_id = g_timeout_add(100, timeout_callback, NULL);
@@ -360,7 +356,7 @@ void create_window()
 	gtk_main();
 }
 
-void restart_program()
+void restart_program(void)
 {
 	current_file[0] = '\0';
 	gtk_widget_destroy(window);

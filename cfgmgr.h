@@ -1,4 +1,4 @@
-void toggleautosave()
+void toggleautosave(void)
 {
 	if (gtk_widget_get_visible(gautosaverate)) 
 	{
@@ -12,13 +12,13 @@ void toggleautosave()
 	}
 }
 
-void closecfg()
+void closecfg(void)
 {
 	visiblecfgmgr = 1;
 	gtk_widget_destroy(dialog);
 }
 
-void showcfg()
+void showcfg(void)
 {
 	visiblecfgmgr = 1;
 	dialog = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -30,7 +30,7 @@ void showcfg()
 	g_signal_connect(dialog, "destroy", G_CALLBACK(closecfg), dialog);
 	gtk_container_set_border_width(GTK_CONTAINER(dialog), 10);
 
-	GtkWidget *defbtn, *applybtn, *cfggrid0;
+	GtkWidget *defbtn, *applybtn;
 
 	GtkWidget *notebook = gtk_notebook_new();
 		GtkWidget *viewgrid = gtk_grid_new();

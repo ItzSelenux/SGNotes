@@ -44,7 +44,9 @@ void next_button_clicked(GtkWidget *next_button)
 
 	last_pos = gtk_text_buffer_get_mark(buffer, "last_pos");
 	if (last_pos == NULL)
-		find;
+	{
+		return;
+	}
 
 	gtk_text_buffer_get_iter_at_mark(buffer, &iter, last_pos);
 	find(GTK_TEXT_VIEW(text_view), text, &iter);
@@ -78,7 +80,7 @@ void prev_button_clicked(GtkWidget *prev_button)
 
 void load_file_content(const char *filename)
 {
-	gchar file_path[1024];
+	gchar file_path[8192];
 	snprintf(file_path, sizeof(file_path), "%s%s%s/%s", home_dir, notes_dir, current_workspace, filename);
 	FILE *file = fopen(file_path, "r");
 	if (file)

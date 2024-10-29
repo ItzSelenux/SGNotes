@@ -1,6 +1,6 @@
 void load_file_content(const char *filename);
-void restart_program();
-static void on_submenu_imglist_item1_selected();
+void restart_program(void);
+static void on_submenu_imglist_item1_selected(void);
 void on_workspace_menu_item_activate(GtkMenuItem *menuitem, gpointer user_data);
 void add_images_from_directory(GtkWidget *widget, gpointer user_data);
 void on_delete_button_clicked(GtkButton *button, gpointer user_data);
@@ -70,10 +70,10 @@ gint show_warning_dialog(const gchar *message)
 	return result;
 }
 
-gint show_file_warning()
+gint show_file_warning(void)
 {
 	gint result;
-	gchar warning_message[256];
+	gchar warning_message[8192];
 
 	snprintf(warning_message, sizeof(warning_message), "\"%s\" file is modified, if you close it your changes will be lost", current_file);
 
@@ -424,7 +424,6 @@ gboolean on_list_press(GtkWidget *widget, GdkEventButton *event, gpointer data)
 {
 	if (event->type == GDK_BUTTON_PRESS && event->button == 3)
 	{
-		GtkWidget *submenu = GTK_WIDGET(data);
 		return TRUE;
 	}
 	return FALSE;
@@ -577,7 +576,7 @@ gboolean on_listbox_clicked(GtkWidget *listbox, GdkEventButton *event, gpointer 
 	return TRUE;
 }
 
-gboolean quit_handler()
+gboolean quit_handler(void)
 {
 	if (!saved)
 	{
@@ -603,4 +602,5 @@ gboolean quit_handler()
 		gtk_main_quit();
 		return FALSE;
 	}
+	return FALSE;
 }

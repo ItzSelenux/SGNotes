@@ -2,7 +2,7 @@ void add_images_from_directory(GtkWidget *widget, gpointer user_data)
 {
 	gtk_list_store_clear(GTK_LIST_STORE(imglist_store));
 
-	char dir_path[1024];
+	char dir_path[8192];
 	snprintf(dir_path, sizeof(dir_path), "%s%s%s/%s_files", home_dir, notes_dir, current_workspace, current_file);
 
 	GFile *directory = g_file_new_for_path(dir_path);
@@ -25,10 +25,10 @@ void add_images_from_directory(GtkWidget *widget, gpointer user_data)
 		return;
 	}
 
-	GFileInfo *info;
-	while ((info = g_file_enumerator_next_file(enumerator, NULL, &error)) != NULL)
+	GFileInfo *fileinfo;
+	while ((fileinfo = g_file_enumerator_next_file(enumerator, NULL, &error)) != NULL)
 	{
-		const char *filename = g_file_info_get_name(info);
+		const gchar *filename = g_file_info_get_name(fileinfo);
 		char *file_path = g_build_filename(dir_path, filename, NULL);
 
 		GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(file_path, NULL);
@@ -57,7 +57,7 @@ void add_images_from_directory(GtkWidget *widget, gpointer user_data)
 void add_image(GtkWidget *widget, gpointer user_data)
 {
 	GtkTreeIter iter;
-	GtkWidget *dialog;
+
 	GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
 	gint res;
 
@@ -83,13 +83,13 @@ void add_image(GtkWidget *widget, gpointer user_data)
 			int target_width = 100;
 			int target_height = gdk_pixbuf_get_height(pixbuf) * target_width / original_width;
 
-			char file_path[1024];
+			char file_path[6144];
 			snprintf(file_path, sizeof(file_path), "%s%s%s/%s_files", home_dir, notes_dir, current_workspace, current_file);
 
 			g_mkdir_with_parents(file_path, 0755);
 
 			// Always use .png extension for the copied files
-			char unique_filename[1024];
+			char unique_filename[8192];
 			int counter = 0;
 			do
 			{
@@ -120,9 +120,9 @@ void add_image(GtkWidget *widget, gpointer user_data)
 }
 
 
-static void on_submenu_imglist_item1_selected()
+static void on_submenu_imglist_item1_selected(void)
 {
-		char file_path[1024];
+		char file_path[8192];
 		file_path[0] = '\0';
 
 		snprintf(file_path, sizeof(file_path), "%s%s%s/%s_files/%d.png", home_dir, notes_dir, current_workspace, current_file, selfromtreeview);
@@ -146,7 +146,7 @@ int numeric_file_compare(const void *a, const void *b)
 static void on_submenu_imglist_item2_selected(GtkWidget *widget, gpointer user_data)
 {
 
-	char file_path[1024];
+	char file_path[8192];
 	file_path[0] = '\0';
 
 	snprintf(file_path, sizeof(file_path), "%s%s%s/%s_files/%d.png", home_dir, notes_dir, current_workspace, current_file, selfromtreeview);
@@ -156,7 +156,7 @@ static void on_submenu_imglist_item2_selected(GtkWidget *widget, gpointer user_d
 		g_print("deleted file:%s\n", file_path );
 		DIR *dir;
 		struct dirent *entry;
-		char folder_path[1024];
+		char folder_path[4096];
 		snprintf(folder_path, sizeof(folder_path), "%s%s%s/%s_files", home_dir, notes_dir, current_workspace, current_file);
 
 		dir = opendir(folder_path);
@@ -184,8 +184,8 @@ static void on_submenu_imglist_item2_selected(GtkWidget *widget, gpointer user_d
 			qsort(file_names, file_count, sizeof(char *), numeric_file_compare);
 			for (int i = 0; i < file_count; i++)
 			{
-				char old_name[1024];
-				char new_name[1024];
+				char old_name[8192];
+				char new_name[8192];
 				snprintf(old_name, sizeof(old_name), "%s/%s", folder_path, file_names[i]);
 				snprintf(new_name, sizeof(new_name), "%s/%d.png", folder_path, i);
 				rename(old_name, new_name);

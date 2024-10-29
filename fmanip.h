@@ -1,4 +1,4 @@
-void on_submenu_item_workspace_selected();
+void on_submenu_item_workspace_selected(void);
 gboolean timeout_callback(gpointer user_data);
 
 void on_save_button_clicked(GtkButton *button, gpointer user_data)
@@ -9,7 +9,7 @@ void on_save_button_clicked(GtkButton *button, gpointer user_data)
 		return;
 	}
 
-	gchar file_path[1024];
+	gchar file_path[8192];
 	snprintf(file_path, sizeof(file_path), "%s%s%s/%s", home_dir, notes_dir, current_workspace, current_file);
 
 	FILE *file = fopen(file_path, "w");
@@ -58,7 +58,7 @@ void on_create_new_workspace(GtkButton *button, gpointer dialog)
 
 		snprintf(workspaces_path, sizeof(workspaces_path), "%s%s", home_dir, notes_dir);
 
-		gchar new_workspace_path[1024];
+		gchar new_workspace_path[8192];
 		snprintf(new_workspace_path, sizeof(new_workspace_path), "%s%s", workspaces_path, workspace_name);
 
 		if (access(new_workspace_path, F_OK) == 0)
@@ -151,12 +151,12 @@ void on_workspace_menu_item_activate(GtkMenuItem *menuitem, gpointer user_data)
 	}
 }
 
-void on_submenu_item_workspace_selected()
+void on_submenu_item_workspace_selected(void)
 {
 	DIR *dir;
 	struct dirent *entry;
 
-	GtkWidget *dialog, *content_area, *tree_view, *scrolled_window;
+	GtkWidget *content_area, *tree_view, *scrolled_window;
 	GtkListStore *list_store;
 	GtkTreeIter iter;
 
@@ -215,12 +215,12 @@ void on_submenu_item_workspace_selected()
 	gtk_widget_destroy(workspaces_dialog);
 }
 
-void load_file_list()
+void load_file_list(void)
 {
 	GtkTreeViewColumn *column;
-	GtkCellRenderer *renderer;
+	//
 	GtkTreeIter iter;
-	char notes_path[512];
+	char notes_path[8192];
 
 	snprintf(notes_path, sizeof(notes_path), "%s%s%s", home_dir, notes_dir, current_workspace);
 
@@ -245,11 +245,9 @@ void load_file_list()
 	if (GTK_IS_TREE_VIEW(filelist))
 	{
 		gtk_tree_view_set_model(GTK_TREE_VIEW(filelist), GTK_TREE_MODEL(filelist_store));
-		renderer = gtk_cell_renderer_text_new();
 		column = gtk_tree_view_column_new_with_attributes("File Name", filelist_renderer, "text", 0, NULL);
 		gtk_tree_view_append_column(GTK_TREE_VIEW(filelist), column);
 	}
-
 	g_object_unref(imglist_store);
 }
 
@@ -298,15 +296,15 @@ int remove_recursive(const char *path)
 	return 0;
 }
 
-void delete_current_file()
+void delete_current_file(void)
 {
 	if (current_file[0] == '\0')
 	{
 		return;
 	}
 
-	char file_path[1024];
-	char data_path[1024];
+	char file_path[8192];
+	char data_path[8192];
 	snprintf(file_path, sizeof(file_path), "%s%s%s/%s", home_dir, notes_dir, current_workspace, current_file);
 	snprintf(data_path, sizeof(data_path), "%s%s%s/%s_files", home_dir, notes_dir, current_workspace, current_file);
 
@@ -408,8 +406,8 @@ void on_export_button_clicked(GtkButton *button, gpointer user_data)
 		return;
 	}
 
-	gchar file_path[1024];
-	gchar data_path[1024];
+	gchar file_path[8192];
+	gchar data_path[8192];
 
 	snprintf(file_path, sizeof(file_path), "%s%s%s/%s", home_dir, notes_dir, current_workspace, current_file);
 	snprintf(data_path, sizeof(data_path), "%s%s%s/%s_files", home_dir, notes_dir, current_workspace, current_file);
@@ -469,7 +467,7 @@ void on_export_button_clicked(GtkButton *button, gpointer user_data)
 	gtk_widget_destroy(file_chooser_dialog);
 }
 
-static void save_file(const gchar *filename)
+void save_file(const gchar *filename)
 {
 	gchar *full_path;
 	FILE *file;

@@ -1,4 +1,4 @@
-void updateuistyle()
+void updateuistyle(void)
 {
 	gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(text_view), (wordwrap == 0) ? GTK_WRAP_NONE : GTK_WRAP_WORD_CHAR);
 		GtkCssProvider *provider = gtk_css_provider_new();
@@ -6,7 +6,6 @@ void updateuistyle()
 			fontfamily, fontsize, fontstyle, fontweight);
 		gtk_css_provider_load_from_data(provider, css, -1, NULL);
 		g_free(css);
-		GtkStyleContext *context = gtk_widget_get_style_context(GTK_WIDGET(text_view));
 		gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
 		GTK_STYLE_PROVIDER(provider),
 		GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
@@ -14,7 +13,7 @@ void updateuistyle()
 		g_object_unref(provider);
 }
 
-void readconf()
+void readconf(void)
 {
 	if (home_dir == NULL)
 	{
@@ -119,7 +118,6 @@ void updateconf(GtkWidget *widget, gpointer data, gint isdefault)
 		PangoFontDescription *font_desc = gtk_font_chooser_get_font_desc(GTK_FONT_CHOOSER(gfont));
 
 		PangoStyle font_style = pango_font_description_get_style(font_desc);
-		fontstyle;
 		switch (font_style)
 		{
 			case PANGO_STYLE_ITALIC:

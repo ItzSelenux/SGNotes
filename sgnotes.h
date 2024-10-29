@@ -46,7 +46,7 @@ const gchar* pver = mver;
 
 GPtrArray *program_icon_names;
 gchar *clicked_workspace = NULL;
-gchar config_file_path[256],markup_buffer[256], notes_path[1024], workspaces_path[1024];
+gchar config_file_path[8192],markup_buffer[8192], notes_path[8192], workspaces_path[8192];
 
 typedef struct
 {
