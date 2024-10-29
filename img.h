@@ -1,6 +1,6 @@
 void add_images_from_directory(GtkWidget *widget, gpointer user_data)
 {
-	gtk_list_store_clear(GTK_LIST_STORE(store));
+	gtk_list_store_clear(GTK_LIST_STORE(imglist_store));
 
 	char dir_path[1024];
 	snprintf(dir_path, sizeof(dir_path), "%s%s%s/%s_files", home_dir, notes_dir, current_workspace, current_file);
@@ -41,8 +41,8 @@ void add_images_from_directory(GtkWidget *widget, gpointer user_data)
 		GdkPixbuf *scaled_pixbuf = gdk_pixbuf_scale_simple(pixbuf, target_width, target_height, GDK_INTERP_BILINEAR);
 
 		GtkTreeIter iter;
-		gtk_list_store_append(store, &iter);
-		gtk_list_store_set(store, &iter, 0, scaled_pixbuf, -1);
+		gtk_list_store_append(imglist_store, &iter);
+		gtk_list_store_set(imglist_store, &iter, 0, scaled_pixbuf, -1);
 
 		g_object_unref(pixbuf);
 		g_object_unref(scaled_pixbuf);
@@ -103,8 +103,8 @@ void add_image(GtkWidget *widget, gpointer user_data)
 			if (g_file_copy(source_file, destination_file, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, NULL))
 			{
 				GdkPixbuf *scaled_pixbuf = gdk_pixbuf_scale_simple(pixbuf, target_width, target_height, GDK_INTERP_BILINEAR);
-				gtk_list_store_append(store, &iter);
-				gtk_list_store_set(store, &iter, 0, scaled_pixbuf, -1);
+				gtk_list_store_append(imglist_store, &iter);
+				gtk_list_store_set(imglist_store, &iter, 0, scaled_pixbuf, -1);
 				g_object_unref(pixbuf);
 				g_object_unref(scaled_pixbuf);
 			}
@@ -193,7 +193,7 @@ static void on_submenu_imglist_item2_selected(GtkWidget *widget, gpointer user_d
 			}
 			free(file_names);
 		}
-		gtk_list_store_clear(GTK_LIST_STORE(store));
+		gtk_list_store_clear(GTK_LIST_STORE(imglist_store));
 		add_images_from_directory(GTK_WIDGET(treeview), user_data);
 	}
 	else

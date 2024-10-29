@@ -1,4 +1,5 @@
 void on_submenu_item_workspace_selected();
+gboolean timeout_callback(gpointer user_data);
 
 void on_save_button_clicked(GtkButton *button, gpointer user_data)
 {
@@ -8,7 +9,7 @@ void on_save_button_clicked(GtkButton *button, gpointer user_data)
 		return;
 	}
 
-	char file_path[1024];
+	gchar file_path[1024];
 	snprintf(file_path, sizeof(file_path), "%s%s%s/%s", home_dir, notes_dir, current_workspace, current_file);
 
 	FILE *file = fopen(file_path, "w");
@@ -57,7 +58,7 @@ void on_create_new_workspace(GtkButton *button, gpointer dialog)
 
 		snprintf(workspaces_path, sizeof(workspaces_path), "%s%s", home_dir, notes_dir);
 
-		char new_workspace_path[1024];
+		gchar new_workspace_path[1024];
 		snprintf(new_workspace_path, sizeof(new_workspace_path), "%s%s", workspaces_path, workspace_name);
 
 		if (access(new_workspace_path, F_OK) == 0)
@@ -107,7 +108,7 @@ void on_workspace_menu_item_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	if (clicked_workspace != NULL)
 	{
-		char objetive[1024];
+		gchar objetive[1024];
 		snprintf(objetive, sizeof(objetive), "%s%s%s", home_dir, notes_dir, clicked_workspace);
 		printf("Workspace selected: %s\n", objetive);
 
@@ -120,7 +121,7 @@ void on_workspace_menu_item_activate(GtkMenuItem *menuitem, gpointer user_data)
 			"Are you sure you want to remove '%s' ?",
 			clicked_workspace
 		);
-gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
+		gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
 
 		gint result = gtk_dialog_run(GTK_DIALOG(dialog));
 		gtk_widget_destroy(dialog);
@@ -216,10 +217,17 @@ void on_submenu_item_workspace_selected()
 
 void load_file_list()
 {
+	GtkTreeViewColumn *column;
+	GtkCellRenderer *renderer;
+	GtkTreeIter iter;
+	char notes_path[512];
+
 	snprintf(notes_path, sizeof(notes_path), "%s%s%s", home_dir, notes_dir, current_workspace);
 
 	DIR *dir;
 	struct dirent *entry;
+
+	filelist_store = gtk_tree_store_new(1, G_TYPE_STRING);
 
 	if ((dir = opendir(notes_path)) != NULL)
 	{
@@ -227,15 +235,22 @@ void load_file_list()
 		{
 			if (entry->d_type == DT_REG)
 			{
-				GtkWidget *label = gtk_label_new(entry->d_name);
-				gtk_label_set_xalign(GTK_LABEL(label), 0.0);
-				gtk_list_box_insert(GTK_LIST_BOX(list), label, -1);
-				gtk_label_set_line_wrap(GTK_LABEL(label), TRUE);
-				
+				gtk_tree_store_append(filelist_store, &iter, NULL);
+				gtk_tree_store_set(filelist_store, &iter, 0, entry->d_name, -1);
 			}
 		}
 		closedir(dir);
 	}
+
+	if (GTK_IS_TREE_VIEW(filelist))
+	{
+		gtk_tree_view_set_model(GTK_TREE_VIEW(filelist), GTK_TREE_MODEL(filelist_store));
+		renderer = gtk_cell_renderer_text_new();
+		column = gtk_tree_view_column_new_with_attributes("File Name", filelist_renderer, "text", 0, NULL);
+		gtk_tree_view_append_column(GTK_TREE_VIEW(filelist), column);
+	}
+
+	g_object_unref(imglist_store);
 }
 
 int remove_recursive(const char *path)
@@ -295,58 +310,164 @@ void delete_current_file()
 	snprintf(file_path, sizeof(file_path), "%s%s%s/%s", home_dir, notes_dir, current_workspace, current_file);
 	snprintf(data_path, sizeof(data_path), "%s%s%s/%s_files", home_dir, notes_dir, current_workspace, current_file);
 
-
 	if (remove(file_path) == 0)
 	{
 		gtk_text_buffer_set_text(buffer, "", -1);
 		current_file[0] = '\0';
 
-		GtkListBoxRow *selected_row = gtk_list_box_get_selected_row(GTK_LIST_BOX(list));
-		if (selected_row != NULL)
+		GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(filelist));
+		GtkTreeIter iter;
+
+		if (gtk_tree_selection_get_selected(selection, (GtkTreeModel **)&filelist_store, &iter))
 		{
-			gtk_container_remove(GTK_CONTAINER(list), GTK_WIDGET(selected_row));
-			gtk_widget_destroy(GTK_WIDGET(selected_row));
+			gtk_tree_store_remove(filelist_store, &iter);
+			gtk_widget_hide(textbox_grid);
 		}
 	}
 	else
 	{
-		GtkWidget *error_dialog = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "Can't delete file: '%s'", current_file);
+		GtkWidget *error_dialog = gtk_message_dialog_new(GTK_WINDOW(window), 
+			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT, 
+			GTK_MESSAGE_ERROR, 
+			GTK_BUTTONS_OK, 
+			"Can't delete file: '%s'", 
+			current_file);
+
 		gtk_window_set_position(GTK_WINDOW(error_dialog), GTK_WIN_POS_CENTER);
 		gtk_window_set_title(GTK_WINDOW(error_dialog), "Error deleting file");
 		gtk_dialog_run(GTK_DIALOG(error_dialog));
 		gtk_widget_destroy(error_dialog);
 	}
+
 	if (remove_recursive(data_path) == 0)
 	{
-	g_print("Directory removed: %s", data_path);
+		g_print("Directory removed: %s\n", data_path);
 	}
 	else
 	{
-		g_print("Error deleting data path, maybe this note don't have pictures");
+		g_print("Error deleting data path, maybe this note doesn't have pictures\n");
 	}
 }
 
-
 void on_delete_button_clicked(GtkButton *button, gpointer user_data)
+{
+	if (!saved)
+	{
+		gint opt = show_file_warning();
+		if (opt == 1)
+		{
+			timeout_callback(NULL);
+		}
+		else if (opt == 2)
+		{
+			g_warning("File was closed without saving modifications, and all changes were lost.");
+			togglesave(text_view, GINT_TO_POINTER(1));
+		}
+		else
+		{
+			return;
+		}
+	}
+
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(filelist));
+	GtkTreeIter iter;
+
+	if (gtk_tree_selection_get_selected(selection, (GtkTreeModel **)&filelist_store, &iter))
+	{
+		gchar *selected_value;
+		gtk_tree_model_get(GTK_TREE_MODEL(filelist_store), &iter, 0, &selected_value, -1);
+			GtkTreePath *path = gtk_tree_model_get_path(GTK_TREE_MODEL(filelist_store), &iter);
+			gtk_tree_view_row_activated(GTK_TREE_VIEW(filelist), path, gtk_tree_view_get_column(GTK_TREE_VIEW(filelist), 0));
+			gtk_tree_path_free(path);
+		g_strlcpy(current_file, selected_value, sizeof(current_file));
+
+		dialog = gtk_message_dialog_new(GTK_WINDOW(window),
+			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+			GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
+			"Are you sure you want to delete '%s'?", selected_value);
+
+		gtk_window_set_title(GTK_WINDOW(dialog), "WARNING");
+		gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
+
+		gint response = gtk_dialog_run(GTK_DIALOG(dialog));
+		gtk_widget_destroy(dialog);
+
+		if (response == GTK_RESPONSE_YES)
+		{
+			delete_current_file();
+		}
+
+		g_free(selected_value);
+	}
+}
+
+void on_export_button_clicked(GtkButton *button, gpointer user_data)
 {
 	if (current_file[0] == '\0')
 	{
 		return;
 	}
 
-	dialog = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO, "Are you sure you want to delete this note: '%s'?", current_file);
-	gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
-	gtk_window_set_title(GTK_WINDOW(dialog), "WARNING");
-	gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
-	gint response = gtk_dialog_run(GTK_DIALOG(dialog));
-	gtk_widget_destroy(dialog);
+	gchar file_path[1024];
+	gchar data_path[1024];
 
-	if (response == GTK_RESPONSE_YES)
+	snprintf(file_path, sizeof(file_path), "%s%s%s/%s", home_dir, notes_dir, current_workspace, current_file);
+	snprintf(data_path, sizeof(data_path), "%s%s%s/%s_files", home_dir, notes_dir, current_workspace, current_file);
+
+	GtkWidget *file_chooser_dialog;
+	file_chooser_dialog = gtk_file_chooser_dialog_new("Select Destination",
+		GTK_WINDOW(window),
+		GTK_FILE_CHOOSER_ACTION_SAVE,
+		"_Cancel", GTK_RESPONSE_CANCEL,
+		"_Save", GTK_RESPONSE_ACCEPT,
+		NULL);
+
+	if (gtk_dialog_run(GTK_DIALOG(file_chooser_dialog)) == GTK_RESPONSE_ACCEPT)
 	{
-		delete_current_file();
-	}
-}
+		GtkFileChooser *chooser = GTK_FILE_CHOOSER(file_chooser_dialog);
+		gchar *destination_file = gtk_file_chooser_get_filename(chooser);
+		GError *error = NULL;
 
+		if (g_file_test(file_path, G_FILE_TEST_EXISTS))
+		{
+			if (g_file_copy(g_file_new_for_path(file_path),
+				g_file_new_for_path(destination_file),
+				G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, &error))
+			{
+				GtkWidget *success_dialog = gtk_message_dialog_new(GTK_WINDOW(window),
+					GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+					GTK_MESSAGE_INFO,
+					GTK_BUTTONS_OK,
+					"File copied successfully to '%s'.", destination_file);
+				gtk_dialog_run(GTK_DIALOG(success_dialog));
+				gtk_widget_destroy(success_dialog);
+			}
+			else
+			{
+				GtkWidget *error_dialog = gtk_message_dialog_new(GTK_WINDOW(window),
+					GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+					GTK_MESSAGE_ERROR,
+					GTK_BUTTONS_OK,
+					"Failed to copy file: %s", error->message);
+				gtk_dialog_run(GTK_DIALOG(error_dialog));
+				gtk_widget_destroy(error_dialog);
+				g_error_free(error);
+			}
+		}
+		else
+		{
+			GtkWidget *error_dialog = gtk_message_dialog_new(GTK_WINDOW(window),
+				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+				GTK_MESSAGE_ERROR,
+				GTK_BUTTONS_OK,
+				"Source file '%s' does not exist.", file_path);
+			gtk_dialog_run(GTK_DIALOG(error_dialog));
+			gtk_widget_destroy(error_dialog);
+		}
+		g_free(destination_file);
+	}
+	gtk_widget_destroy(file_chooser_dialog);
+}
 
 static void save_file(const gchar *filename)
 {
@@ -378,12 +499,15 @@ void saveToFile(const gchar *text)
 {
 	gchar *full_path;
 	FILE *file;
+	gint note_overwrite = 0;
 
 	const char *home_dir = g_get_home_dir();
-
 	gchar *dir_path = g_build_filename(home_dir, ".local", "share", "sgnotes", current_workspace, NULL);
+
 	if (!g_file_test(dir_path, G_FILE_TEST_EXISTS))
+	{
 		g_mkdir_with_parents(dir_path, 0700);
+	}
 
 	full_path = g_build_filename(dir_path, text, NULL);
 
@@ -391,21 +515,35 @@ void saveToFile(const gchar *text)
 	{
 		GtkWidget *dialog;
 
-		dialog = gtk_message_dialog_new(NULL,
-			GTK_DIALOG_MODAL,
-			GTK_MESSAGE_QUESTION,
-			GTK_BUTTONS_YES_NO,
-			"The file already exists. Do you want to overwrite it?");
-		gtk_window_set_title(GTK_WINDOW(dialog), "Confirm");
-		gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
-		gint result = gtk_dialog_run(GTK_DIALOG(dialog));
-		gtk_widget_destroy(dialog);
-
-		if (result == GTK_RESPONSE_NO || result == GTK_RESPONSE_CANCEL)
+		if (permitoverwrite)
 		{
+			dialog = gtk_message_dialog_new(NULL,
+				GTK_DIALOG_MODAL,
+				GTK_MESSAGE_QUESTION,
+				GTK_BUTTONS_YES_NO,
+				"The file already exists. Do you want to overwrite it?");
+			gtk_window_set_title(GTK_WINDOW(dialog), "Confirm");
+			gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
+			gint result = gtk_dialog_run(GTK_DIALOG(dialog));
+			gtk_widget_destroy(dialog);
+
+			if (result == GTK_RESPONSE_NO || result == GTK_RESPONSE_CANCEL)
+			{
+				g_free(full_path);
+				g_free(dir_path);
+				return;
+			}
+			else
+			{
+				note_overwrite = 1;
+			}
+		}
+		else
+		{
+			show_error_dialog("File already exists and overwriting is not allowed.");
 			g_free(full_path);
 			g_free(dir_path);
-			return; // Do not overwrite the existing file
+			return;
 		}
 	}
 
@@ -414,96 +552,150 @@ void saveToFile(const gchar *text)
 	{
 		fclose(file);
 		g_print("Note saved to %s\n", full_path);
-		GtkWidget *label = gtk_label_new(text);
-		gtk_list_box_insert(GTK_LIST_BOX(list), label, -1);
-						gtk_label_set_xalign(GTK_LABEL(label), 0.0);
-				gtk_label_set_line_wrap(GTK_LABEL(label), TRUE);
-		gtk_widget_show_all(GTK_WIDGET(list));
-		g_free(full_path);
+
+		if (!note_overwrite)
+		{
+			GtkTreeIter iter;
+			gtk_tree_store_append(filelist_store, &iter, NULL);
+			gtk_tree_store_set(filelist_store, &iter, 0, text, -1);
+
+			GtkTreeIter first_iter;
+			if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(filelist_store), &first_iter))
+			{
+				gtk_tree_store_move_before(filelist_store, &iter, &first_iter);
+			}
+		}
 	}
 	else
 	{
 		g_print("Unable to create the file.\n");
-		GtkWidget *error_dialog = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "Unable to create the file: \n '%s'", text);
+		GtkWidget *error_dialog = gtk_message_dialog_new(GTK_WINDOW(window),
+			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+			GTK_MESSAGE_ERROR,
+			GTK_BUTTONS_OK,
+			"Unable to create the file: \n '%s'", text);
 		gtk_window_set_title(GTK_WINDOW(error_dialog), "Unable to create the file.");
 		gtk_dialog_run(GTK_DIALOG(error_dialog));
 		gtk_widget_destroy(error_dialog);
 	}
-
+	g_free(full_path);
 	g_free(dir_path);
 }
 
-static void on_rename_button_clicked(GtkButton *button, gpointer user_data)
+
+void on_rename_button_clicked(GtkButton *button, gpointer user_data)
 {
-	if (current_file[0] == '\0')
+	gint opt = show_file_warning();
+	if (opt == 1)
+	{
+		timeout_callback(NULL);
+	}
+	else if (opt == 2)
+	{
+		g_warning("File was closed without saving modifications, and all changes were lost.");
+		togglesave(text_view, GINT_TO_POINTER(1));
+	}
+	else
 	{
 		return;
 	}
 
+	gint note_overwrite = 0;
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(filelist));
+	GtkTreeModel *model;
+	GtkTreeIter iter;
+
+	if (!gtk_tree_selection_get_selected(selection, &model, &iter))
+	{
+		g_warning("No file selected.");
+		return;
+	}
+
+	g_autofree gchar *selected_value = NULL;
+	gtk_tree_model_get(model, &iter, 0, &selected_value, -1);
+
+	GtkTreePath *path = gtk_tree_model_get_path(model, &iter);
+	gtk_tree_view_row_activated(GTK_TREE_VIEW(filelist), path, gtk_tree_view_get_column(GTK_TREE_VIEW(filelist), 0));
+	gtk_tree_path_free(path);
+
 	const gchar *text = "";
-	gchar *output;
-	gchar *input;
-	gchar *imgoutput;
-	gchar *imginput;
-	FILE *file;
+	g_autofree gchar *output = NULL;
+	g_autofree gchar *input = NULL;
+	g_autofree gchar *imgoutput = NULL;
+	g_autofree gchar *imginput = NULL;
 
-	dialog;
-		GtkWidget *content_area;
-		GtkWidget *entry;
-		GtkWidget *label;
-		GtkWidget *ok_button;
-		GtkWidget *cancel_button;
-	dialog = gtk_dialog_new_with_buttons("Rename Note:",
-		GTK_WINDOW(user_data),
+	GtkWidget *rename_dialog = gtk_dialog_new_with_buttons("Rename Note:",
+		NULL,
 		GTK_DIALOG_MODAL,
-		"OK",
-		GTK_RESPONSE_OK,
-		"Cancel", GTK_RESPONSE_CANCEL, NULL);
-		gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
+		"OK", GTK_RESPONSE_OK,
+		"Cancel", GTK_RESPONSE_CANCEL,
+		NULL);
+	gtk_window_set_position(GTK_WINDOW(rename_dialog), GTK_WIN_POS_CENTER);
+	gtk_widget_set_size_request(rename_dialog, 333, -1);
 
-		gtk_widget_set_size_request(dialog, 333, -1);
-		content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+	GtkWidget *content_area = gtk_dialog_get_content_area(GTK_DIALOG(rename_dialog));
+	GtkWidget *entry = gtk_entry_new();
+	gtk_container_add(GTK_CONTAINER(content_area), entry);
 
-		entry = gtk_entry_new();
-		gtk_container_add(GTK_CONTAINER(content_area), entry);
-		g_signal_connect(G_OBJECT(entry), "changed", G_CALLBACK(on_entry_changed), dialog);
-		g_signal_connect(G_OBJECT(entry), "key-press-event", G_CALLBACK(on_entry_key_press), dialog);
-		gtk_widget_show_all(dialog);
+	g_signal_connect(G_OBJECT(entry), "changed", G_CALLBACK(on_entry_changed), rename_dialog);
+	g_signal_connect(G_OBJECT(entry), "key-press-event", G_CALLBACK(on_entry_key_press), rename_dialog);
+	gtk_widget_show_all(rename_dialog);
 
-	gint result = gtk_dialog_run(GTK_DIALOG(dialog));
+	gint result = gtk_dialog_run(GTK_DIALOG(rename_dialog));
 	if (result == GTK_RESPONSE_OK)
 	{
 		text = gtk_entry_get_text(GTK_ENTRY(entry));
-		const char *home_dir = g_get_home_dir();
+		if (g_strcmp0(text, "") == 0)
+		{
+			g_warning("File name cannot be empty.");
+			gtk_widget_destroy(rename_dialog);
+			return;
+		}
 
-		gchar *dir_path = g_build_filename(home_dir, ".local", "share", "sgnotes", current_workspace, NULL);
+		const char *home_dir = g_get_home_dir();
+		g_autofree gchar *dir_path = g_build_filename(home_dir, ".local", "share", "sgnotes", current_workspace, NULL);
+
 		if (!g_file_test(dir_path, G_FILE_TEST_EXISTS))
+		{
 			g_mkdir_with_parents(dir_path, 0700);
+		}
+
 		output = g_build_filename(dir_path, text, NULL);
 
-		// Check if the file already exists
-		if (g_file_test(output, G_FILE_TEST_EXISTS))
+		if (permitoverwrite)
 		{
-			dialog;
-				dialog = gtk_message_dialog_new(NULL,
-				GTK_DIALOG_MODAL,
-				GTK_MESSAGE_QUESTION,
-				GTK_BUTTONS_YES_NO,
-			"The file already exists. Do you want to overwrite it?");
-			gtk_window_set_title(GTK_WINDOW(dialog), "Confirm");
-			gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER);
-			gint result = gtk_dialog_run(GTK_DIALOG(dialog));
-			gtk_widget_destroy(dialog);
-
-			if (result != GTK_RESPONSE_YES)
+			if (g_file_test(output, G_FILE_TEST_EXISTS))
 			{
-				g_free(output);
-				g_free(dir_path);
-				return;
+				GtkWidget *overwrite_dialog = gtk_message_dialog_new(NULL,
+					GTK_DIALOG_MODAL,
+					GTK_MESSAGE_QUESTION,
+					GTK_BUTTONS_YES_NO,
+					"The file already exists. Do you want to overwrite it?");
+				gtk_window_set_title(GTK_WINDOW(overwrite_dialog), "Confirm");
+				gtk_window_set_position(GTK_WINDOW(overwrite_dialog), GTK_WIN_POS_CENTER);
+				gint overwrite_result = gtk_dialog_run(GTK_DIALOG(overwrite_dialog));
+				gtk_widget_destroy(overwrite_dialog);
+
+				if (overwrite_result != GTK_RESPONSE_YES)
+				{
+					gtk_widget_destroy(rename_dialog);
+					return;
+				}
+				else
+				{
+					note_overwrite = 1;
+				}
 			}
 		}
+		else
+		{
+			show_error_dialog("File already exist");
+			gtk_widget_destroy(rename_dialog);
+			return;
+		}
+
 		input = g_build_filename(dir_path, current_file, NULL);
-		
+
 		char img_path[255];
 		strcpy(img_path, input);
 		strcat(img_path, "_files");
@@ -511,46 +703,61 @@ static void on_rename_button_clicked(GtkButton *button, gpointer user_data)
 		char img_path2[255];
 		strcpy(img_path2, output);
 		strcat(img_path2, "_files");
-		
-		imginput = g_build_filename(img_path, NULL);
-		imgoutput = g_build_filename(img_path2, NULL);
-		
-		strcpy(current_file, text);
+
+		imginput = g_strdup(img_path);
+		imgoutput = g_strdup(img_path2);
+
 		if (rename(input, output) == 0)
 		{
 			g_print("File moved successfully: %s > %s\n", input, output);
-				GtkListBoxRow *selected_row = gtk_list_box_get_selected_row(GTK_LIST_BOX(list));
-		if (selected_row != NULL)
+			gtk_tree_store_set(GTK_TREE_STORE(model), &iter, 0, text, -1);
+		}
+		else
 		{
-			GtkWidget *row_widget = gtk_bin_get_child(GTK_BIN(selected_row));
-			if (GTK_IS_LABEL(row_widget))
+			g_warning("Error moving file: %s", g_strerror(errno));
+		}
+
+		if (g_file_test(imginput, G_FILE_TEST_EXISTS))
+		{
+			if (rename(imginput, imgoutput) == 0)
 			{
-				gtk_label_set_text(GTK_LABEL(row_widget), text);
+				g_print("Image folder moved successfully: %s > %s\n", imginput, imgoutput);
+			}
+			else
+			{
+				g_warning("Error moving image folder: %s", g_strerror(errno));
 			}
 		}
 		else
 		{
-			g_warning("Error moving file");
+			g_print("Image folder does not exist, skipping: %s\n", imginput);
 		}
-}
-		if (rename(imginput, imgoutput) == 0)
+
+		if (note_overwrite == 1)
 		{
-			g_print("File moved successfully: %s > %s\n", imginput, imgoutput);
+			current_file[0] = '\0';
+			gtk_widget_hide(scrolled_txt);
+			gtk_widget_hide(pic_button);
+			gtk_widget_hide(treeview);
+			gtk_widget_hide(scrolled_treeview);
+			gtk_widget_hide(submenu_filelist_item2);
+			gtk_widget_hide(submenu_filelist_item3);
+			gtk_widget_hide(submenu_imglist_item3);
+			gtk_widget_hide(textbox_grid);
+			gtk_widget_set_hexpand(scrolled_list, TRUE);
+			gtk_label_set_markup(GTK_LABEL(wintitle), "<b>Notes - SGNotes</b>");
+			gtk_tree_store_remove(GTK_TREE_STORE(model), &iter);
+			g_print("File entry removed from tree.\n");
 		}
 		else
 		{
-			g_warning("Error moving file");
+			strcpy(current_file, text);
 		}
-
-
 	}
-	else if (result == GTK_RESPONSE_CANCEL)
-	{
-		g_print("\n");
-	}
-	gtk_widget_destroy(dialog);
+	gtk_widget_destroy(rename_dialog);
 }
-static void on_submenu_item1_selected(GtkWidget *widget, gpointer data)
+
+static void submenu_item_newnote_selected(GtkWidget *widget, gpointer data)
 {
 	GtkWidget *dialog, *content_area, *entry;
 	gint result;
@@ -585,6 +792,5 @@ static void on_submenu_item1_selected(GtkWidget *widget, gpointer data)
 	{
 		g_print("\n");
 	}
-
 	gtk_widget_destroy(dialog);
 }
