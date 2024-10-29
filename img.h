@@ -2,7 +2,7 @@ void add_images_from_directory(GtkWidget *widget, gpointer user_data)
 {
 	gtk_list_store_clear(GTK_LIST_STORE(imglist_store));
 
-	char dir_path[8192];
+	gchar dir_path[8192];
 	snprintf(dir_path, sizeof(dir_path), "%s%s%s/%s_files", home_dir, notes_dir, current_workspace, current_file);
 
 	GFile *directory = g_file_new_for_path(dir_path);
@@ -29,14 +29,14 @@ void add_images_from_directory(GtkWidget *widget, gpointer user_data)
 	while ((fileinfo = g_file_enumerator_next_file(enumerator, NULL, &error)) != NULL)
 	{
 		const gchar *filename = g_file_info_get_name(fileinfo);
-		char *file_path = g_build_filename(dir_path, filename, NULL);
+		gchar *file_path = g_build_filename(dir_path, filename, NULL);
 
 		GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(file_path, NULL);
 			if (pixbuf != NULL)
 		{
-		int original_width = gdk_pixbuf_get_width(pixbuf);
-		int target_width = 90;
-		int target_height = gdk_pixbuf_get_height(pixbuf) * target_width / original_width;
+		gint original_width = gdk_pixbuf_get_width(pixbuf);
+		gint target_width = 90;
+		gint target_height = gdk_pixbuf_get_height(pixbuf) * target_width / original_width;
 
 		GdkPixbuf *scaled_pixbuf = gdk_pixbuf_scale_simple(pixbuf, target_width, target_height, GDK_INTERP_BILINEAR);
 
@@ -48,12 +48,13 @@ void add_images_from_directory(GtkWidget *widget, gpointer user_data)
 		g_object_unref(scaled_pixbuf);
 		}
 		g_free(file_path);
-		g_object_unref(info);
+		g_object_unref(fileinfo);
 	}
 	g_file_enumerator_close(enumerator, NULL, NULL);
 	g_object_unref(enumerator);
 	g_object_unref(directory);
 }
+
 void add_image(GtkWidget *widget, gpointer user_data)
 {
 	GtkTreeIter iter;

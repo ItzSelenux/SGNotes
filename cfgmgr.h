@@ -20,6 +20,10 @@ void closecfg(void)
 
 void showcfg(void)
 {
+	if (visiblecfgmgr == 1)
+	{
+		return;
+	}
 	visiblecfgmgr = 1;
 	dialog = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(dialog), "Settings - SGNotes");

@@ -393,8 +393,9 @@ void on_delete_button_clicked(GtkButton *button, gpointer user_data)
 		if (response == GTK_RESPONSE_YES)
 		{
 			delete_current_file();
+			saved = 1;
+			gtk_widget_activate(submenu_item_closefile);
 		}
-
 		g_free(selected_value);
 	}
 }
@@ -583,19 +584,22 @@ void saveToFile(const gchar *text)
 
 void on_rename_button_clicked(GtkButton *button, gpointer user_data)
 {
-	gint opt = show_file_warning();
-	if (opt == 1)
+	if (!saved)
 	{
-		timeout_callback(NULL);
-	}
-	else if (opt == 2)
-	{
-		g_warning("File was closed without saving modifications, and all changes were lost.");
-		togglesave(text_view, GINT_TO_POINTER(1));
-	}
-	else
-	{
-		return;
+		gint opt = show_file_warning();
+		if (opt == 1)
+		{
+			timeout_callback(NULL);
+		}
+		else if (opt == 2)
+		{
+			g_warning("File was closed without saving modifications, and all changes were lost.");
+			togglesave(text_view, GINT_TO_POINTER(1));
+		}
+		else
+		{
+			return;
+		}
 	}
 
 	gint note_overwrite = 0;
@@ -660,9 +664,9 @@ void on_rename_button_clicked(GtkButton *button, gpointer user_data)
 
 		output = g_build_filename(dir_path, text, NULL);
 
-		if (permitoverwrite)
+		if (g_file_test(output, G_FILE_TEST_EXISTS))
 		{
-			if (g_file_test(output, G_FILE_TEST_EXISTS))
+			if (permitoverwrite)
 			{
 				GtkWidget *overwrite_dialog = gtk_message_dialog_new(NULL,
 					GTK_DIALOG_MODAL,
@@ -684,12 +688,12 @@ void on_rename_button_clicked(GtkButton *button, gpointer user_data)
 					note_overwrite = 1;
 				}
 			}
-		}
-		else
-		{
-			show_error_dialog("File already exist");
-			gtk_widget_destroy(rename_dialog);
-			return;
+			else
+			{
+				show_error_dialog("File already exist");
+				gtk_widget_destroy(rename_dialog);
+				return;
+			}
 		}
 
 		input = g_build_filename(dir_path, current_file, NULL);
