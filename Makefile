@@ -1,5 +1,5 @@
 VERSION := $(shell cat VERSION)
-CC = gcc
+CC = cc
 
 SOURCEVIEW =
 SOURCEVIEWARG =
@@ -9,7 +9,7 @@ ifeq ($(WITHSOURCEVIEW),1)
 	SOURCEVIEWARG = -DWITHSOURCEVIEW
 endif
 
-CFLAGS = `pkg-config --cflags gtk+-3.0 $(SOURCEVIEW)` -Dmver=\"$(VERSION)\" $(SOURCEVIEWARG)
+CFLAGS = `pkg-config --cflags gtk+-3.0 $(SOURCEVIEW)` -Dpver=\"$(VERSION)\" $(SOURCEVIEWARG)
 LIBS = `pkg-config --libs gtk+-3.0 $(SOURCEVIEW)`
 SRC = sgnotes.c
 OBJ = $(SRC:.c=.o)

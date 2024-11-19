@@ -600,6 +600,7 @@ gboolean quit_handler(void)
 	else
 	{
 		gtk_main_quit();
+		exit(0);
 		return FALSE;
 	}
 	return FALSE;

@@ -23,8 +23,9 @@ void readconf(void)
 	}
 	else
 	{
-		snprintf(config_file_path, sizeof(config_file_path), "%s/.config/sgnotes.conf", home_dir);
+		config_file_path = g_build_filename(home_dir, "/.config/sgnotes.conf", NULL);
 
+		g_print("\n%s\n", config_file_path);
 		FILE *file = fopen(config_file_path, "r");
 
 		if (file == NULL)
@@ -32,11 +33,11 @@ void readconf(void)
 			return;
 		}
 
-		char line[ML];
+		gchar line[ML];
 		while (fgets(line, sizeof(line), file) != NULL)
 		{
-			char *name = strtok(line, "=");
-			char *value_str = strtok(NULL, "=");
+			gchar *name = strtok(line, "=");
+			gchar *value_str = strtok(NULL, "=");
 
 			if (name != NULL && value_str != NULL)
 			{
@@ -67,11 +68,11 @@ void readconf(void)
 				}
 				else if (strcmp(name, "defworkspace") == 0)
 				{
+					g_strchomp(value_str);
+					defworkspace = strdup(value_str);
 					if (!initialized)
 					{
 						initialized = 1;
-						g_strchomp(value_str);
-						defworkspace = strdup(value_str);
 						strncpy(current_workspace, strdup(value_str), sizeof(current_workspace) - 1);
 					}
 				}
@@ -103,7 +104,7 @@ void readconf(void)
 		}
 		fclose(file);
 	}
-	g_print("wordwrap: %d\nfont: %s\nfontsize: %d\ndefworkspace: %s\npermitoverwrite: %d\nautosave: %d\nautosaverate: %d\nusecsd: %d\nresizablewidgets: %d\n",
+	g_info("wordwrap: %d\nfont: %s\nfontsize: %d\ndefworkspace: %s\npermitoverwrite: %d\nautosave: %d\nautosaverate: %d\nusecsd: %d\nresizablewidgets: %d\n",
 		wordwrap, fontfamily, fontsize, defworkspace, permitoverwrite, autosave, autosaverate, usecsd, resizablewidgets);
 }
 

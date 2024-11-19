@@ -28,7 +28,8 @@ static GtkTextBuffer *buffer;
 gint fontsize=12, rfontsize=12, wordwrap=1,autosave=1,autosaverate=1,permitoverwrite=0,nautosaverate,
 fix,showfind=0,nocsd=0,fcsd=0,selfromtreeview,selfromlistbox, nohome=0, initialized=0, usecsd=1,
 resizablewidgets=0, saved=1, cooldown=0, visiblecfgmgr=0, timeout_id=0, fromfile=0;
-gchar *pm, *home_dir, *notes_dir, *fontfamily, *fontstyle, *fontweight, *defworkspace, *program_icon;
+gchar *pm, *notes_dir, *fontfamily, *fontstyle, *fontweight, *defworkspace, *program_icon;
+const gchar *home_dir;
 GtkWidget *dialog,*scrolled_treeview,*treeview,*wintitle,*search_entry,*next_button,*prev_button;
 
 GtkWidget *window, *mainbutton, *workspaces_dialog, *submenu_item_workspace, *submenu_item_newnote,
@@ -42,11 +43,10 @@ GtkWidget *window, *mainbutton, *workspaces_dialog, *submenu_item_workspace, *su
 *gusecsd, *gresizablewidgets, *submenu_item_wordwrap;
 
 gchar current_workspace[1024]="Default",current_file[1024]="";
-const gchar* pver = mver;
 
 GPtrArray *program_icon_names;
 gchar *clicked_workspace = NULL;
-gchar config_file_path[8192],markup_buffer[8192], notes_path[8192], workspaces_path[8192];
+gchar *config_file_path,markup_buffer[8192], notes_path[8192], *workspaces_path;
 
 typedef struct
 {
