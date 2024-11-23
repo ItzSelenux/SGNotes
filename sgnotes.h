@@ -58,6 +58,17 @@ typedef struct
 #define gtk_source_view_new gtk_text_view_new
 #endif
 
+gchar **remaining_args = NULL;
+GOptionContext *context;
+GError *error = NULL;
+
+GOptionEntry entries[] =
+{
+	{"nocsd", 0, 0, G_OPTION_ARG_NONE, &nocsd, "Disable CSD Decoration", NULL},
+	{G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY, &remaining_args, "Workspace name or other arguments", "[Workspace name]"},
+	{NULL}
+};
+
 #include "events.h"
 #include "editor.h"
 #include "fmanip.h"

@@ -68,11 +68,6 @@ void create_window(void)
 	GtkWidget *headerbar = gtk_header_bar_new();
 	gtk_header_bar_set_show_close_button(GTK_HEADER_BAR(headerbar), TRUE);
 
-		mainbutton = gtk_menu_button_new();
-		GtkWidget *wicon = gtk_image_new_from_icon_name(program_icon, GTK_ICON_SIZE_BUTTON);
-		gtk_container_add(GTK_CONTAINER(mainbutton), wicon);
-		gtk_header_bar_pack_start(GTK_HEADER_BAR(headerbar), mainbutton);
-
 	GtkWidget *mainvbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 
 	GtkWidget *submenu = gtk_menu_new();
@@ -148,6 +143,12 @@ void create_window(void)
 	}
 	else
 	{
+		mainbutton = gtk_menu_button_new();
+			GdkPixbuf *pixbuf = gtk_icon_theme_load_icon(theme, program_icon, 64, GTK_ICON_LOOKUP_USE_BUILTIN, NULL);
+			GdkPixbuf *scaled_pixbuf = gdk_pixbuf_scale_simple(pixbuf, 16, 16, GDK_INTERP_BILINEAR);
+			GtkWidget *wicon = gtk_image_new_from_pixbuf(scaled_pixbuf);
+		gtk_container_add(GTK_CONTAINER(mainbutton), wicon);
+		gtk_header_bar_pack_start(GTK_HEADER_BAR(headerbar), mainbutton);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), submenu_item_file);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), submenu_item_edit);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), submenu_item_view);

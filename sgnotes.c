@@ -10,17 +10,6 @@ int main(int argc, char *argv[])
 	nocsd = (env_sgcsd != NULL) ? atoi(env_sgcsd) == 0 : 0;
 	fcsd = (env_sgcsd != NULL) ? 1 : 0;
 
-	gchar **remaining_args = NULL;
-	GOptionContext *context;
-	GError *error = NULL;
-
-	GOptionEntry entries[] =
-	{
-		{"nocsd", 0, 0, G_OPTION_ARG_NONE, &nocsd, "Disable CSD Decoration", NULL},
-		{G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY, &remaining_args, "Workspace name or other arguments", "[Workspace name]"},
-		{NULL}
-	};
-
 	context = g_option_context_new(NULL);
 	g_option_context_add_main_entries(context, entries, NULL);
 
@@ -38,14 +27,8 @@ int main(int argc, char *argv[])
 		initialized = 1;
 	}
 
-	if (nocsd) {
-		fcsd = TRUE;
-	}
-
-	if (current_workspace[0] != '\0')
-	{
-		g_print("Current workspace: %s\n", current_workspace);
-	}
+	if (nocsd)
+	{fcsd = TRUE;}
 
 	g_option_context_free(context);
 	g_strfreev(remaining_args); 

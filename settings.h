@@ -23,86 +23,45 @@ void readconf(void)
 	}
 	else
 	{
-		config_file_path = g_build_filename(home_dir, "/.config/sgnotes.conf", NULL);
+		config_file_path = g_build_filename(g_get_user_config_dir(), "sgnotes.conf", NULL);
 
-		g_print("\n%s\n", config_file_path);
-		FILE *file = fopen(config_file_path, "r");
+		GKeyFile *key_file = g_key_file_new();
+		GError *error = NULL;
 
-		if (file == NULL)
+		if (!g_key_file_load_from_file(key_file, config_file_path, G_KEY_FILE_NONE, &error))
 		{
+			g_warning("Error loading config file: %s", error->message);
+			g_clear_error(&error);
+			g_key_file_free(key_file);
 			return;
 		}
 
-		gchar line[ML];
-		while (fgets(line, sizeof(line), file) != NULL)
-		{
-			gchar *name = strtok(line, "=");
-			gchar *value_str = strtok(NULL, "=");
+		wordwrap = g_key_file_get_integer(key_file, "View", "wordwrap", NULL);
+		fontfamily = g_key_file_get_string(key_file, "View", "fontfamily", NULL);
+		fontsize = g_key_file_get_integer(key_file, "View", "fontsize", NULL);
+		rfontsize = fontsize;
+		fontstyle = g_key_file_get_string(key_file, "View", "fontstyle", NULL);
+		fontweight = g_key_file_get_string(key_file, "View", "fontweight", NULL);
 
-			if (name != NULL && value_str != NULL)
-			{
-				// Set the value of the corresponding variable based on the name
-				if (strcmp(name, "wordwrap") == 0)
-				{
-					wordwrap = atoi(value_str);
-				}
-				else if (strcmp(name, "fontfamily") == 0)
-				{
-					g_strchomp(value_str);
-					fontfamily = strdup(value_str);
-				}
-				else if (strcmp(name, "fontsize") == 0)
-				{
-					fontsize = atoi(value_str);
-					rfontsize = atoi(value_str);
-				}
-				else if (strcmp(name, "fontstyle") == 0)
-				{
-					g_strchomp(value_str);
-					fontstyle = strdup(value_str);
-				}
-				else if (strcmp(name, "fontweight") == 0)
-				{
-					g_strchomp(value_str);
-					fontweight = strdup(value_str);
-				}
-				else if (strcmp(name, "defworkspace") == 0)
-				{
-					g_strchomp(value_str);
-					defworkspace = strdup(value_str);
-					if (!initialized)
-					{
-						initialized = 1;
-						strncpy(current_workspace, strdup(value_str), sizeof(current_workspace) - 1);
-					}
-				}
-				else if (strcmp(name, "permitoverwrite") == 0)
-				{
-					permitoverwrite = atoi(value_str);
-				}
-				else if (strcmp(name, "autosave") == 0)
-				{
-					autosave = atoi(value_str);
-				}
-				else if (strcmp(name, "autosaverate") == 0)
-				{
-					autosaverate = atoi(value_str);
-				}
-				else if (strcmp(name, "usecsd") == 0)
-				{
-					usecsd = atoi(value_str);
-					if (!fcsd)
-					{
-						nocsd = (usecsd == 0);
-					}
-				}
-				else if (strcmp(name, "resizablewidgets") == 0)
-				{
-					resizablewidgets = atoi(value_str);
-				}
-			}
+		defworkspace = g_key_file_get_string(key_file, "File", "defworkspace", NULL);
+		permitoverwrite = g_key_file_get_integer(key_file, "File", "permitoverwrite", NULL);
+		autosave = g_key_file_get_integer(key_file, "File", "autosave", NULL);
+		autosaverate = g_key_file_get_integer(key_file, "File", "autosaverate", NULL);
+
+		if (!initialized && defworkspace != NULL)
+		{
+			initialized = 1;
+			strncpy(current_workspace, defworkspace, sizeof(current_workspace) - 1);
+			current_workspace[sizeof(current_workspace) - 1] = '\0';
 		}
-		fclose(file);
+		usecsd = g_key_file_get_integer(key_file, "Window", "usecsd", NULL);
+		resizablewidgets = g_key_file_get_integer(key_file, "Window", "resizablewidgets", NULL);
+
+		if (!fcsd)
+		{
+			nocsd = (usecsd == 0);
+		}
+		g_key_file_free(key_file);
 	}
 	g_info("wordwrap: %d\nfont: %s\nfontsize: %d\ndefworkspace: %s\npermitoverwrite: %d\nautosave: %d\nautosaverate: %d\nusecsd: %d\nresizablewidgets: %d\n",
 		wordwrap, fontfamily, fontsize, defworkspace, permitoverwrite, autosave, autosaverate, usecsd, resizablewidgets);
