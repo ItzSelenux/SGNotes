@@ -43,7 +43,6 @@ void window_set_icon(GtkWindow *target, gchar *iconname)
 
 gint show_warning_dialog(const gchar *message)
 {
-	GtkWidget *dialog;
 
 	dialog = gtk_message_dialog_new(NULL, 
 		GTK_DIALOG_MODAL, 
@@ -263,7 +262,7 @@ static gboolean filelist_element_showmenu(GtkWidget *widget, GdkEventButton *eve
 	return FALSE;
 }
 
-void on_workspace_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer dialog)
+void on_workspace_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer output)
 {
 	GtkTreeModel *model;
 	GtkTreeIter iter;
@@ -278,7 +277,7 @@ void on_workspace_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTr
 		strncpy(current_workspace, selected_workspace, sizeof(current_workspace) - 1);
 		g_free(selected_workspace);
 
-		gtk_widget_destroy(dialog);
+		gtk_widget_destroy(output);
 		restart_program();
 	}
 }
@@ -301,8 +300,8 @@ void adjust_font_size(GtkWidget *widget, gpointer data)
 	gtk_css_provider_load_from_data(provider, css, -1, NULL);
 	g_free(css);
 
-	GtkStyleContext *context = gtk_widget_get_style_context(GTK_WIDGET(text_view));
-	gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+	GtkStyleContext *currentcontext = gtk_widget_get_style_context(GTK_WIDGET(text_view));
+	gtk_style_context_add_provider(currentcontext, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 
 	g_object_unref(provider);
 }
@@ -429,11 +428,11 @@ gboolean on_list_press(GtkWidget *widget, GdkEventButton *event, gpointer data)
 	return FALSE;
 }
 // Entry dialogs behavior
-static gboolean on_entry_key_press(GtkWidget *widget, GdkEventKey *event, GtkDialog *dialog)
+static gboolean on_entry_key_press(GtkWidget *widget, GdkEventKey *event, GtkDialog *input)
 {
 	if (event->keyval == GDK_KEY_Return || event->keyval == GDK_KEY_KP_Enter)
 	{
-		gtk_dialog_response(dialog, GTK_RESPONSE_OK);
+		gtk_dialog_response(input, GTK_RESPONSE_OK);
 		return TRUE;
 	}
 	return FALSE;
@@ -511,13 +510,13 @@ void on_filelist_item_selected(gpointer user_data)
 	cooldown = 0;
 }
 
-gboolean on_treeview_clicked(GtkWidget *treeview, GdkEventButton *event, gpointer data)
+gboolean on_treeview_clicked(GtkWidget *input, GdkEventButton *event, gpointer data)
 {
 	if (event->button == 3)
 	{
 		GtkTreePath *path = NULL;
 		GtkTreeViewColumn *column = NULL;
-		if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(treeview), (gint)event->x, (gint)event->y, &path, &column, NULL, NULL))
+		if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(input), (gint)event->x, (gint)event->y, &path, &column, NULL, NULL))
 		{
 			gchar *path_string = gtk_tree_path_to_string(path);
 			selfromtreeview = atoi(path_string);
@@ -533,7 +532,7 @@ gboolean on_treeview_clicked(GtkWidget *treeview, GdkEventButton *event, gpointe
 	{
 			GtkTreePath *path = NULL;
 		GtkTreeViewColumn *column = NULL;
-		if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(treeview), (gint)event->x, (gint)event->y, &path, &column, NULL, NULL))
+		if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(input), (gint)event->x, (gint)event->y, &path, &column, NULL, NULL))
 		{
 			gchar *path_string = gtk_tree_path_to_string(path);
 			selfromtreeview = atoi(path_string);

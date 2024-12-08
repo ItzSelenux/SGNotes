@@ -14,10 +14,10 @@ void add_images_from_directory(GtkWidget *widget, gpointer user_data)
 		return;
 	}
 
-	GError *error = NULL;
-	GFileEnumerator *enumerator = g_file_enumerate_children(directory, G_FILE_ATTRIBUTE_STANDARD_NAME, G_FILE_QUERY_INFO_NONE, NULL, &error);
+	GError *currenterror = NULL;
+	GFileEnumerator *enumerator = g_file_enumerate_children(directory, G_FILE_ATTRIBUTE_STANDARD_NAME, G_FILE_QUERY_INFO_NONE, NULL, &currenterror);
 
-	if (error != NULL)
+	if (currenterror != NULL)
 	{
 		g_print("Failed to enum files on directory: %s\n", error->message);
 		g_error_free(error);

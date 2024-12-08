@@ -26,9 +26,9 @@ void readconf(void)
 		config_file_path = g_build_filename(g_get_user_config_dir(), "sgnotes.conf", NULL);
 
 		GKeyFile *key_file = g_key_file_new();
-		GError *error = NULL;
+		GError *currenterror = NULL;
 
-		if (!g_key_file_load_from_file(key_file, config_file_path, G_KEY_FILE_NONE, &error))
+		if (!g_key_file_load_from_file(key_file, config_file_path, G_KEY_FILE_NONE, &currenterror))
 		{
 			g_warning("Error loading config file: %s", error->message);
 			g_clear_error(&error);

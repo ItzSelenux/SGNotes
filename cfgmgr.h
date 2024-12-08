@@ -14,7 +14,7 @@ void toggleautosave(void)
 
 void closecfg(void)
 {
-	visiblecfgmgr = 1;
+	visiblecfgmgr = 0;
 	gtk_widget_destroy(dialog);
 }
 

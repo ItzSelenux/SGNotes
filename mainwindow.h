@@ -205,8 +205,8 @@ void create_window(void)
 		gtk_css_provider_load_from_data(provider, css, -1, NULL);
 		g_free(css);
 
-		GtkStyleContext *context = gtk_widget_get_style_context(GTK_WIDGET(text_view));
-		gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+		GtkStyleContext *currentcontext = gtk_widget_get_style_context(GTK_WIDGET(text_view));
+		gtk_style_context_add_provider(currentcontext, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 
 		g_object_unref(provider);
 
