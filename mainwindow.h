@@ -71,6 +71,7 @@ void create_window(void)
 	GtkWidget *mainvbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 
 	GtkWidget *submenu = gtk_menu_new();
+		gtk_menu_set_reserve_toggle_size(GTK_MENU(submenu), FALSE);
 	submenu_item_workspace = gtk_menu_item_new_with_label("Switch workspace");
 
 	GtkWidget *submenu_item_settings = gtk_menu_item_new_with_label("Preferences");
@@ -78,6 +79,7 @@ void create_window(void)
 	GtkWidget *submenu_item_onlinehelp = gtk_menu_item_new_with_label("Online Help");
 
 	GtkWidget *submenu_filelist = gtk_menu_new();
+		gtk_menu_set_reserve_toggle_size(GTK_MENU(submenu_filelist), FALSE);
 	submenu_item_newnote = gtk_menu_item_new_with_label("Create new note");
 	submenu_item_save = gtk_menu_item_new_with_label("Save changes");
 	submenu_filelist_item2 = gtk_menu_item_new_with_label("Rename Current Note");
@@ -96,6 +98,7 @@ void create_window(void)
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu_filelist), gtk_separator_menu_item_new());
 	gtk_menu_shell_append(GTK_MENU_SHELL(submenu_filelist), submenu_item_quit);
 	GtkWidget *submenu_edit = gtk_menu_new();
+		gtk_menu_set_reserve_toggle_size(GTK_MENU(submenu_edit), FALSE);
 	submenu_imglist_item3 = gtk_menu_item_new_with_label("Add Picture to current note");
 	gtk_menu_shell_append(GTK_MENU_SHELL(submenu_edit), submenu_imglist_item3);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu_edit), gtk_separator_menu_item_new());
@@ -114,6 +117,7 @@ void create_window(void)
 	gtk_menu_shell_append(GTK_MENU_SHELL(submenu_view), submenu_item_zoomreset);
 
 	GtkWidget *submenu_help = gtk_menu_new();
+		gtk_menu_set_reserve_toggle_size(GTK_MENU(submenu_help), FALSE);
 	gtk_menu_shell_append(GTK_MENU_SHELL(submenu_help), submenu_item_onlinehelp);
 	gtk_menu_shell_append(GTK_MENU_SHELL(submenu_help), submenu_item_about);
 
